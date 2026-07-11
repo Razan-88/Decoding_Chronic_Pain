@@ -1,0 +1,30 @@
+# data — never commit
+data/
+*.nwb
+*.npy
+*.npz
+*.h5
+*.mat
+*.parquet
+
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# envs
+.venv/
+env/
+*.egg-info/
+
+# outputs
+results/
+figures/
+*.log
+
+# os / editor
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
