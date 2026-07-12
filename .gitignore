@@ -28,3 +28,5 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 .vscode/
+# anaconda jupyter project db
+anaconda_projects/
