@@ -112,3 +112,33 @@ A: It sets noise size vs spike depth (SNR). Same noise makes strong channels eas
 
 channels hard. Sweeping it lets me plot denoiser performance vs SNR instead of one number.
 
+---
+
+# Stage 2 — Realistic noise
+
+**Q: White vs pink noise?**
+A: White = equal power at all frequencies (flat spectrum), looks like uniform fuzz. Pink = more power at low frequencies (1/f), looks like slow wandering. Real neural background is 1/f, so pink is more realistic.
+
+**Q: How is pink noise built?**
+A: FFT white noise to frequency domain, divide each component by sqrt(f) to suppress high / boost low frequencies, inverse FFT back. Skip bin 0 (DC) to avoid divide-by-zero. Pink = white with reshaped frequency content.
+
+**Q: Where does 50 Hz mains noise come from?**
+A: UK mains supply is 50 Hz. Powered devices radiate a 50 Hz field the electrode picks up. Steady hum, present in almost all real recordings.
+
+**Q: Why is mains put in the shared (common-mode) part?**
+A: The external field hits all channels at once, so every channel picks up nearly the same hum. That's common-mode by definition — and exactly what CAR/CMR can remove.
+
+**Q: What does `common_frac` control?**
+A: The proportion of noise shared across channels (common-mode) vs independent per channel. 0 = all independent, 1 = all shared, 0.5 = half/half.
+
+**Q: Why does shared vs independent noise matter?**
+A: Shared noise is easier to remove — a multi-channel method compares channels, sees the same wiggle on all of them, subtracts it. Independent noise is harder — nothing shared to exploit across channels.
+
+**Q: With high common_frac, which wins — per-channel or joint denoising, and why?**
+A: Joint (multi-channel). Only it can see across channels, so only it can spot that a wiggle appears on every channel (= noise, not spike) and remove it. A per-channel method sees one channel in isolation and can't tell shared noise from anything else.
+
+**Q: How does this connect to the main argument?**
+A: Two sides of the same point. Signal side: per-channel denoising destroys the cross-channel spike pattern sorting needs. Noise side: per-channel denoising can't exploit cross-channel noise structure. Both waste the cross-channel dimension, which carries information.
+
+**Q: Debugging — "only index 0 filled, rest flat" means what?**
+A: Something is trapped inside the first loop — usually `return` or the main work indented one level too deep, so the function exits after the first iteration. Fix the indentation.
