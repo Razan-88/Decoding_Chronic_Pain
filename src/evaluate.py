@@ -35,7 +35,7 @@ def snr_db(signal_amp, noise_std):
 
 def detect_spikes(data, fs, k=4, noise_std=None):
     if noise_std is None:
-        noise_std = data.std()
+        noise_std = np.median(np.abs(data)) / 0.6745
     threshold = -k * noise_std
     below = data < threshold
     crossings = np.where(np.diff(below.astype(int)) == 1)[0] + 1
