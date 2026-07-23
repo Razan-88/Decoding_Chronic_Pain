@@ -33,13 +33,22 @@ def snr_db(signal_amp, noise_std):
     return 20 * np.log10(np.abs(signal_amp) / noise_std)
 
 
-def detect_spikes(data, fs, k=4, noise_std=None):
+def detect_spikes(data, fs, k=4, noise_std=None, refractory_ms=3.0):
     if noise_std is None:
         noise_std = np.median(np.abs(data)) / 0.6745
     threshold = -k * noise_std
     below = data < threshold
     crossings = np.where(np.diff(below.astype(int)) == 1)[0] + 1
-    return crossings / fs
+
+    # enforce refractory period
+    min_gap = int(refractory_ms * fs / 1000)
+    keep = []
+    last = -min_gap
+    for c in crossings:
+        if c - last >= min_gap:
+            keep.append(c)
+            last = c
+    return np.array(keep) / fs
 
 
 def score_detections(detected, true_times, tolerance=0.001):
