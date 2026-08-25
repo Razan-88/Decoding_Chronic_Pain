@@ -104,12 +104,14 @@ The words ``thesis'' and ``dissertation'' are used interchangeably here. All act
 \section{The gap}
 
 \chapter{Single-Channel Methods}
-This chapter describes the data and the methods used to detect and denoise the target unit's spikes in a single channel. It first introduces the recording and how the target unit is identified, then estimates the noise floor. It then describes the detection pipeline: building the spike template, matching it to the signal, and constraining detections by their timing after the stimulus, followed by the supervised classifier. Finally, it describes the denoising methods evaluated and the metrics used to assess both detection and denoising. 
+This chapter describes the data and the methods used to detect, classify and denoise the target unit's spikes in a single channel. It first introduces the recording and how the target unit is identified, then estimates the noise floor. It then describes the detection pipeline in three stages: amplitude thresholding, building and matching a spike template, and constraining detections by their timing after the stimulus. It then describes the two classifiers applied to the surviving detections: a one-class and two-class support vector machine.  Finally, it describes the denoising methods evaluated, the design used to assess whether denoising improves detection or classification, and the metrics used throughout.  
+
 \section{The data: rat saphenous nerve microneurography}
 This project uses an extracellular microneurography recording from the peripheral nerve of a rat, sampled at 30 kHz over approximately 2.3 hours. The nerve carries many afferent fibres, so the electrode records the action potentials of many units at once, superimposed on background noise. 
 Recordings were made using two multi-electrode sensor units placed at different positions along the nerve, each containing several channels corresponding to slightly different electrode locations. Eight channels carry manually labelled ground truth spikes (CH3, CH8, CH9, CH10, CH14, CH19, CH25, CH30). 
-During the recording, an electrical stimulus (Pain stimulus) was delivered repeatedly, giving 2,310 stimulation pulses (TTL) at a nominal rate of around 0.25 Hz. The target fibre responds to each stimulus by firing at an approximately fixed latency. The ground truth spike times were marked manually by a human annotator, who only labelled recognisable nerve responses;  therefore, the annotations are conservative, and not every response is labelled. Each spike is marked at the point where the signal crosses zero on its descending slope. 
-This project develops the pipeline primarily on Channel 19, a channel with a clear recognisable ground truth and uses other channels to assess consistency across channels. 
+During the recording, an electrical stimulus (Pain stimulus) was delivered repeatedly, giving 2,310 stimulation pulses (TTL) at a normal rate of around 0.25 Hz. The target fibre responds to each stimulus by firing at an approximately fixed latency. The ground truth spike times were marked manually by a human annotator, who only labelled recognisable nerve responses; therefore, the annotations are conservative, and not every response is labelled. Each spike is marked at the point where the signal crosses zero on its descending slope. 
+This project develops the pipeline primarily on Channel 19 (CH19), a single channel with a clear, recognisable ground truth. The signal was preprocessed by the recording laboratory, so it has been band-pass filtered 300-6000 Hz, common average referenced, and stimulus blanked. The analysis window used is 900 seconds, starting at the 900th stimulus (~3602.7s), containing 177 ground truth target spikes. 
+
 \section{Noise estimation and preprocessing}
 The recording given was already bandpass-filtered, with the stimulation artefact blanked (set to zero); no further filtering was applied in this project. Because the signal is already band-limited, the residual noise is correlated in time rather than white; this will become relevant when evaluating denoising methods later.
 The target unit's spikes are small, only about two to three times the amplitude of the background noise, so they do not stand out clearly and can not be isolated by amplitude threshold alone. Therefore, removing noise and detecting these spikes is the central challenge addressed in this chapter. 
@@ -117,25 +119,35 @@ The noise level is estimated using the median absolute deviation (MAD) \cite{qui
 \begin{equation}
     \sigma_{\text{noise}} = \frac{\operatorname{median}(|x|)}{0.6745}
 \end{equation}
-Where \[x\] is the signal. The median is used instead of the standard deviation because the spikes are large and infrequent, 
+where \[x\] is the signal. 
+The median is used instead of standard deviation because the spikes are large and infrequent, so the median does not inflate the estimate the way standard deviation would; dividing by 0.6745 rescales the value to be comparable to a standard deviation under an assumption of Gaussian noise \cite{drebitz_optimizing_2019}. MAD is an estimate, so it assumes the signal is mostly noise and approximately Gaussian \cite{coupe_robust_2010}. But because it is applied identically to every signal, it is a valid basis for comparison. This noise estimate forms the basis of the amplitude detection threshold described in the sections below. 
+\section{Detection pipeline}
 
-and computed as the median of the absolute signal divided by 0.6745. The median is used instead of standard deviation because the spikes are large and infrequent, so the median does not inflate the estimate the way standard deviation would; dividing by 0.6745 rescales the value to be comparable to a standard deviation under an assumption of Gaussian noise \cite{drebitz_optimizing_2019}. MAD is an estimate, so it assumes the signal is mostly noise and approximately Gaussian \cite{coupe_robust_2010}. But because it is applied identically to every signal, it is a valid basis for comparison. This noise estimate forms the basis of the amplitude detection threshold described in the sections below. 
-\section{Template building and spike detection}
-The spike template is built by averaging the ground truth spikes of the target unit. For each marked spike, a 60-sample window (2ms at 30kHz) is extracted from the signal, and these windows are averaged to give the unit's mean waveform. Before averaging, each spike is aligned on a common reference point within a short search region around the marked time, so that the same feature falls at the same position in every window; without this, the waveform would sit at a slightly different offset, and the average would be blurred
-Two alignment methods are used. The first aligns each spike at its trough (the most negative point), which is a standard and simple approach but is sensitive to noise, since the exact location of the trough can shift slightly from spike to spike \cite{lee_non-linear_2021}. The second method, as described in \cite{caro-martin_spike_2018}, aligns each spike at the negative peak of the signal's first derivative. 
+\subsection{Amplitude thresholding}
+Amplitude thresholding selects spikes whenever the signal drops below a set threshold, so the performance of this method relies mostly on the selected threshold; if the threshold is too low, it will probably recognise many spikes that are not the target; if it is a high threshold, it will lose some of the spikes \cite{cimolato_modern_2021}. (This needs to go to the related work section). 
+Spikes are detected from their amplitude. Because the target unit's spikes are negative-going, a detection is registered wherever the signal crosses below a set threshold relative to the noise floor: 
+\begin{equation}
+    \text{threshold} = -k\,\sigma_{\text{noise}}
+\end{equation}
+Where \(\sigma_{\text{noise}}\) is the median absolute deviation estimate from the previous section and \(k\) is a multiplier controlling how strict the threshold is \cite{quiroga_unsupervised_2004, park_deep_2019}. A downward crossing below this threshold marks a candidate spike. 
+To prevent a single spike being counted more than once, a 3 ms refractory period is enforced after each detection, during which no further detection is registered. The reason the refractory period is longer than what is usually reported (0.66 ms in \cite{laboy-juarez_normalized_2019}; 1.28ms in \cite{rizk_optimizing_2009}) because, when threshold crossings were measured without a refractory period, the median interval between consecutive detections was only 1 ms  (95.6\% of intervals fell below 3ms), which is far shorter than the intervals between successive target spikes, which roughly fire once per stimulus (every ~4 s). A single action potential can last several milliseconds and therefore produce several detections milliseconds apart . 
+
+
+\subsection{Template building and spike detection}
+The spike template is built by averaging the ground truth spikes of the target unit. For each marked spike, a 90-sample window (3ms at 30kHz), 45 samples either side of the trough, is then extracted from the signal, and these windows are averaged to give the unit's mean waveform. Before averaging, each spike is aligned on a common reference point within a short search region around the marked time, so that the same feature falls at the same position in every window; without this, the waveform would sit at a slightly different offset, and the average would be blurred
+Aligns each spike at its trough (the most negative point), which is a standard and simple approach but is sensitive to noise, since the exact location of the trough can shift slightly from spike to spike \cite{lee_non-linear_2021}. 
 To locate spikes matching the target unit's waveform, the template is slid along the signal, and a similarity score is computed at every position. The score is the Pearson correlation coefficient between the template and the signal window at each position, which is an approach by \cite{park_deep_2019} for spike classification on single-electrode extracellular recordings:
 \begin{equation}
     r_i = \frac{\sum_{j=1}^{n} (t_j - \bar{t})(x_{i,j} - \bar{x}_i)}
     {\sqrt{\sum_{j=1}^{n} (t_j-\bar{t})^2}\;\sqrt{\sum_{j=1}^{n} (x_{i,j} - \bar{x}_i)^2}}
 \end{equation}
 where \(t_j\) are the template samples, \(x_i,j\) the signal samples in the window at position \(i,\bar{t}\) and \(\bar{x}\) their mean, and \(n\) is the template length. The score \(r_i\) lies on [-1, 1], where 1 indicates a perfect match in shape, and because the score is normalised, it measures waveform shape independently of amplitude, so a small spike and a large one with the same spike score the same. The principle of using a threshold-normalised shape similarity score to separate the target unit from other detections is used by \cite{laboy-juarez_normalized_2019}, although they apply cosine similarity across a multi-channel (tetrode) template rather than a single-channel Pearson correlation used here. 
-Spikes are also detected from their amplitude. Because the target unit's spikes are negative going, a detection is registered wherever the signal crosses below a set threshold relative to the noise floor: 
-\begin{equation}
-    \text{threshold} = -k,\sigma_{\text{noise}}
-\end{equation}
-Where \(\sigma_{\text{noise}}\) is the median absolute deviation estimate from the previous section and \(k\) is a multiplier controlling how strict the threshold is \cite{quiroga_unsupervised_2004, park_deep_2019}. A downward crossing below this threshold marks a candidate spike. To prevent a single spike being counted more than once, a 3 ms refractory period is enforced after each detection, during which no further detection is registered. This is done to prevent a single spike from being counted more than once, because a single action potential lasts several milliseconds and can cross the threshold more than once as its waveform falls and rebounds, producing multiple detections of the same spike. The reason the refractory period is longer than what is usually reported (0.66 ms in \cite{laboy-juarez_normalized_2019}; 1.28ms in \cite{rizk_optimizing_2009}) is that when intervals between raw detections were measured, the duplicate detections were separated by a median of only 1 ms, which is far shorter than the interval between real spikes from the target unit, which fires roughly once per stimulus. A 3 ms refractory period therefore removes these repeats while leaving real spikes unaffected. 
-\section{The latency constraint}
+ 
+\subsection{Latency constraint}
+Latency-based constraints on the detection search space have been applied in evoked microneurography \cite{troglio_hybrid_2026}. The target fibre fires consistently at about the same latency after each electrical stimulus (around ~ 100 ms later), so a detection's post-stimulus latency indicated whether it could belong to the target unit or not, which waveform shape alone does not provide.For each ground truth spike, the latency was computed as the interval from the most recent preceding stimulus; the median latency across the 177 target spikes was 100.1 ms. A detection was retained only if its post-stimulus latency fell within 2.5 ms of this median latency (97.6-102.6 ms)
+
 \section{Spike classification (SVM)}
+Two support vector machine (SVM) classifiers with radial basis function (RBF) kernels were applied to trough-aligned waveforms, following the raw waveform approach of \cite{troglio_hybrid_2026}. 
 \section{Denoising methods}
 \section{Evaluation metrics}
 
@@ -147,12 +159,6 @@ Where \(\sigma_{\text{noise}}\) is the median absolute deviation estimate from t
 \section{The effect of denoising on detection}
 \section{Consistency across channels}
 
-\chapter{Multi-Channel Methods}
-\section{The case for multiple channels}
-\section{Propagation-delay alignment}
-\section{Cross-channel fingerprint}
-
-\chapter{Multi-Channel Results}
 
 \chapter{Discussion}
 \section{Critical discussion of findings}
