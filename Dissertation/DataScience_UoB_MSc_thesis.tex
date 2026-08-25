@@ -93,14 +93,34 @@ The words ``thesis'' and ``dissertation'' are used interchangeably here. All act
 \tableofcontents
 \chapter{Context}
 \section{Motivations}
+1. What chronic pain is 
+2. Nociceptors, what they are (pain sensing) and why their activity matters for understanding pain
+3. Explain how spike timing and firing patterns of individual fibres carry information about pain
+4. Microeletroencephalography, what it is, why it's the right tool, and what it gives. 
+5. Identifying individual fibres' spikes in the recording is a problem this thesis addresses 
 \section{Challenges}
+1. One electrode, many fibres (action potentials), noise
+2. Fibre overlap: other fibres fire at similar latencies and have similar waveform shapes to the target. 
+3. No clean reference, unlike synthetic data; real recordings have no ground truth clean waveforms, so denoising methods can't be trained or evaluated against a known target. 
 \section{Investigative focus}
+The aim: a single-channel pipeline to denoise the recording and detect the target unit's spikes and classify them
 \section{Structure}
-
+One paragraph that explains what each chapter covers in order
 \chapter{Related Work}
 \section{Preprocessing and denoising}
+1. Standard preprocessing for nerve recordings; bandpass filtering, referencing, artefact blanking 
+2. denoising approaches: wavelet methods, autoencoders
+3. Challenge specific to spikes, like denoising must preserve spike shape, not just reduce noise
 \section{Spike detection and template matching}
+1. Amplitude thresholding (the standard k×MAD approach, Quiroga 2004)
+2. Template matching (normalised correlation, matching by waveform shape)
+3. Latency constraint (using post-stimulus latency to constrain detection).
+4. Note the limits of each 
 \section{Related pipelines}
+1. Troglio (2025 and 2026) hybrid knowledge/data-driven pipeline, latency constraint, SVM classification and their single-electrode 2025 paper.
+2. Laboy-Juárez: normalised template matching. but, it's multi-channel (tetrode, template concatenated across 4 electrodes).
+3. Buccino / SpikeInterface: quality metrics fail to separate true from false when distributions overlap
+4. There's more pipelines 
 \section{The gap}
 
 \chapter{Single-Channel Methods}
@@ -144,20 +164,31 @@ To locate spikes matching the target unit's waveform, the template is slid along
 where \(t_j\) are the template samples, \(x_i,j\) the signal samples in the window at position \(i,\bar{t}\) and \(\bar{x}\) their mean, and \(n\) is the template length. The score \(r_i\) lies on [-1, 1], where 1 indicates a perfect match in shape, and because the score is normalised, it measures waveform shape independently of amplitude, so a small spike and a large one with the same spike score the same. The principle of using a threshold-normalised shape similarity score to separate the target unit from other detections is used by \cite{laboy-juarez_normalized_2019}, although they apply cosine similarity across a multi-channel (tetrode) template rather than a single-channel Pearson correlation used here. 
  
 \subsection{Latency constraint}
-Latency-based constraints on the detection search space have been applied in evoked microneurography \cite{troglio_hybrid_2026}. The target fibre fires consistently at about the same latency after each electrical stimulus (around ~ 100 ms later), so a detection's post-stimulus latency indicated whether it could belong to the target unit or not, which waveform shape alone does not provide.For each ground truth spike, the latency was computed as the interval from the most recent preceding stimulus; the median latency across the 177 target spikes was 100.1 ms. A detection was retained only if its post-stimulus latency fell within 2.5 ms of this median latency (97.6-102.6 ms)
+Latency-based constraints on the detection search space have been applied in evoked microneurography \cite{troglio_hybrid_2026}. The target fibre fires consistently at about the same latency after each electrical stimulus (~ 100 ms later), so a detection's post-stimulus latency indicated whether it could belong to the target unit or not, which waveform shape alone does not provide. For each ground truth spike, the latency was computed as the interval from the most recent preceding stimulus; the median latency across the 177 target spikes was 100.1 ms. A detection was retained only if its post-stimulus latency fell within an 8 ms window centred on the median of  (96.1-104.1 ms). The window width was selected by sweeping candidates from 1 to 14 ms, and F1 peaked at 8 ms. 
 
 \section{Spike classification (SVM)}
-Two support vector machine (SVM) classifiers with radial basis function (RBF) kernels were applied to trough-aligned waveforms, following the raw waveform approach of \cite{troglio_hybrid_2026}. 
+Two support vector machine (SVM) classifiers with radial basis function (RBF) kernels were applied to trough-aligned waveforms, following the raw waveform approach of \cite{troglio_hybrid_2026}. Both were applied to the latency survivor detections and evaluated by five-fold cross-validation with a fixed random seed. 
+
+[TO DO: two-class SVM, C=1.0 fixed, standardScaler on training folds, class-weighted, out of fold pooling]
+Performance was measured by precision, recall, and F1. [TO DO: add out-of-fold pooling and ROC-AUC/PR-AUC; bootstrap CIs]
+
+\subsection{One-Class SVM}
+One-class SVM is a novelty detection machine learning method that learns a decision function to classify new data as similar or different to the training set. Here, the one-class SVM is trained on the target waveforms of latency constraint detection survivors only and evaluated on held-out targets together with all non-target detections. A survivor was labelled a target if it fell within 2 ms of a ground truth spike. The target waveforms were split into five folds; in each fold, the model was trained on the other four folds and tested on the held-out targets together with all non-targets, and it was verified that no waveform appeared in both partitions of any fold. Predictions were pooled across folds so that each candidate received a single out-of-fold prediction, and metrics were computed once on the full set at the true class ratio. An RBF kernel was used (gamma = scale), and nu ($\nu$) was fixed at 0.1 a priori to avoid tuning the hyperparameter on the evaluation data. nu sets the expected fraction of training points allowed to fall outside of the learning boundary. Because the thresholded F1 of a one-class model is sensitive to nu, threshold-independent measures such as ROC-AUC and average precision (PR-AP) were used to summarise performance, as these are suitable for imbalanced classification  \cite{campos_evaluation_2016}. One-class RBF classifiers are sensitive to feature scaling \cite{juszczak_feature_2002, feragen_adaptive_2015}. Standardisation, which rescales each feature by its standard deviation, is problematic for these waveforms because the low-variance tail samples are divided by a very small standard deviation, amplifying them and distorting the distance used by the RBF kernel, so the boundary rejects almost all candidates; therefore, features were not standardised. 
+\subsection{Two-class svm}
+Unlike one-class SVM, two-class SVM was trained on both target and non-target waveforms to learn the boundary that separates the two classes \cite{worheide_multi-omics_2021}. It was applied to the same latency survivor candidate set as the one-class model. Because targets are a minority of the survivors, class imbalance was handled by class weighting rather than resampling. Features were standardised using a StandardScaler fit on the training folds only and applied to the test fold, in contrast to the one-class model. Similar to one-class, the parameter C was fixed at 1.0 a priori to avoid tuning on the evaluation data.  Evaluation used five-fold stratified cross-validation, with predictions pooled across folds so that each candidate received a single out-of-fold prediction and metrics were computed once on the full set. Similar to one-class, performance was summarised by precision, recall, F1, ROC-AUC and PR-AP. 
+[Still I need To DO: There are some fixes I need to do to my code and add bootstrap (single-arm CIs and paired contrast to both one-class and two-class)]
+
 \section{Denoising methods}
 \section{Evaluation metrics}
+\section{After denoising evaluation design}
 
 \chapter{Single-Channel Results}
 \section{Experimental setup}
 \section{Detection performance}
-\section{Why detection is limited: the overlap diagnostic}
-\section{Denoising quality and the metric trap}
+\section{Why detection is limited}
+\section{Denoising quality}
 \section{The effect of denoising on detection}
-\section{Consistency across channels}
+\section{Classification performance and the effect of denoising}
 
 
 \chapter{Discussion}
