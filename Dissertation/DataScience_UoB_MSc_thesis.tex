@@ -141,13 +141,14 @@ The noise level is estimated using the median absolute deviation (MAD) \cite{qui
 \end{equation}
 where \[x\] is the signal. 
 The median is used instead of standard deviation because the spikes are large and infrequent, so the median does not inflate the estimate the way standard deviation would; dividing by 0.6745 rescales the value to be comparable to a standard deviation under an assumption of Gaussian noise \cite{drebitz_optimizing_2019}. MAD is an estimate, so it assumes the signal is mostly noise and approximately Gaussian \cite{coupe_robust_2010}. But because it is applied identically to every signal, it is a valid basis for comparison. This noise estimate forms the basis of the amplitude detection threshold described in the sections below. 
-\section{Detection pipeline}
 
+\section{Detection}
 \subsection{Amplitude thresholding}
 Amplitude thresholding selects spikes whenever the signal drops below a set threshold, so the performance of this method relies mostly on the selected threshold; if the threshold is too low, it will probably recognise many spikes that are not the target; if it is a high threshold, it will lose some of the spikes \cite{cimolato_modern_2021}. (This needs to go to the related work section). 
 Spikes are detected from their amplitude. Because the target unit's spikes are negative-going, a detection is registered wherever the signal crosses below a set threshold relative to the noise floor: 
 \begin{equation}
     \text{threshold} = -k\,\sigma_{\text{noise}}
+    \label{MAD noise estimate}
 \end{equation}
 Where \(\sigma_{\text{noise}}\) is the median absolute deviation estimate from the previous section and \(k\) is a multiplier controlling how strict the threshold is \cite{quiroga_unsupervised_2004, park_deep_2019}. A downward crossing below this threshold marks a candidate spike. 
 To prevent a single spike being counted more than once, a 3 ms refractory period is enforced after each detection, during which no further detection is registered. The reason the refractory period is longer than what is usually reported (0.66 ms in \cite{laboy-juarez_normalized_2019}; 1.28ms in \cite{rizk_optimizing_2009}) because, when threshold crossings were measured without a refractory period, the median interval between consecutive detections was only 1 ms  (95.6\% of intervals fell below 3ms), which is far shorter than the intervals between successive target spikes, which roughly fire once per stimulus (every ~4 s). A single action potential can last several milliseconds and therefore produce several detections milliseconds apart . 
@@ -165,12 +166,39 @@ where \(t_j\) are the template samples, \(x_i,j\) the signal samples in the wind
  
 \subsection{Latency constraint}
 Latency-based constraints on the detection search space have been applied in evoked microneurography \cite{troglio_hybrid_2026}. The target fibre fires consistently at about the same latency after each electrical stimulus (~ 100 ms later), so a detection's post-stimulus latency indicated whether it could belong to the target unit or not, which waveform shape alone does not provide. For each ground truth spike, the latency was computed as the interval from the most recent preceding stimulus; the median latency across the 177 target spikes was 100.1 ms. A detection was retained only if its post-stimulus latency fell within an 8 ms window centred on the median of  (96.1-104.1 ms). The window width was selected by sweeping candidates from 1 to 14 ms, and F1 peaked at 8 ms. 
+\section{Denoising methods}
 
-\section{Spike classification (SVM)}
+ 
+\subsection{Wavelet}
+Wavelet denoising is a signal processing method that works by transforming the signal into wavelet coefficients to remove or shrink the small coefficients that represent noise, and then it reconstructs the signal from what remains \cite{wei_wavelet_2005}. 
+For this project, SWT was used to denoise the channel over DWT because SWT does not decimate, so the number of coefficients remains the same across all levels, unlike DWT, which uses a decimation operation; therefore, SWT is better for denoising \cite{kechris_removing_2021}. 
+The signal was decomposed using Daubechies 4 to decomposition level 4 to give approximation and details at each level. At each level, the noise level was estimated using the same MAD estimator \ref{MAD noise estimate} on the detail coefficients at each level. A level-independent universal threshold was applied using the VisuShrink formula:
+\begin{equation}
+    \lambda = \sigma \sqrt{2 \ln N}
+    \label{VisuShrink}
+\end{equation}
+Where \[N\] is the number of coefficients at that level \cite{donoho_minimax_1998}. 
+The detail coefficients were shrunk using soft thresholding using the following formula:
+\begin{equation}
+    \eta(x, \lambda) = \text{sign}(x)\, \max(|x| - \lambda,\, 0)
+    \label{Soft thresholding}
+\end{equation}
+This shrinks the coefficients towards zero instead of removing them. The approximation coefficients were left unchanged. The denoised signal is then reconstructed back from the cleaned coefficients to a time-domain signal by inverse SWT. Soft thresholding was chosen over hard thresholding to allow for smoother reconstruction and to avoid sharp discontinuities\cite{zhang_improved_2019}. 
+\subsection{Dense and Convolutional Autoencoders}
+Two autoencoder denoisers were used: dense and convolutional autoencoders. Both autoencoders were trained on the same data and applied to the signal in the same way; they only differ in their internal architecture. 
+Denoising Autoencoders generally require clean signals as a target reference during training so the model can calculate its reconstructive loss \cite{vincent_extracting_2008}. With real extracellular recordings, there is no clean reference, so training pairs were generated synthetically from the real spike template. The continuous signal was divided into 60 sample windows; each window was created as one of two types: a window that contains the template spike or only a noisy window. For the windows with a spike, the template was randomly shifted and scaled so the model learns to see spikes at different positions and amplitudes. To each clean window, Gaussian noise was then added to produce the noisy input, giving pairs of noisy input and clean target. For training, both autoencoders used the Adam optimiser was to minimise the mean squared error (MSE) between the reconstruction output and the clean target:
+\begin{equation}
+    \mathcal{L}_{\text{MSE}} = \frac{1}{N} \sum_{i=1}^{N} \left( x_i - \hat{x}_i \right)^2
+    \label{MSE}
+\end{equation}
+Where \[\mathcal{L}_{\text{MSE}}\] is the loss being minimised, \[N\] is the number of samples, \[x_i\] is the clean target value and \[\hat{x}_i\] is the reconstructed output from the Autoencoder \cite{jadon_comprehensive_2022}. 
+
+To denoise the recording, the trained models were applied to overlapping windows sliding across the signal. Each window was normalised by the MAD noise level before the model, to match the training normalisation, then rescaled back, and where windows overlapped, the outputs were averaged.
+The difference between Dense and Convolutional autoencoders is that Dense used fully connected layers, compressing the 60-sample window to 30, then to a 15-unit latent space \cite{li_aecuration_2025}. Whereas Convolutional replaces the fully connected layers with 1D convolutional layers, where each convolutional layer slides a small filter (kernel size 3) across the window to detect local spike-shaped patterns wherever they occur in the window \cite{li_accurate_2020, kechris_removing_2021}. This handles spikes at different positions better than dense 
+
+\section{Classification (SVM)}
 Two support vector machine (SVM) classifiers with radial basis function (RBF) kernels were applied to trough-aligned waveforms, following the raw waveform approach of \cite{troglio_hybrid_2026}. Both were applied to the latency survivor detections and evaluated by five-fold cross-validation with a fixed random seed. 
-
-[TO DO: two-class SVM, C=1.0 fixed, standardScaler on training folds, class-weighted, out of fold pooling]
-Performance was measured by precision, recall, and F1. [TO DO: add out-of-fold pooling and ROC-AUC/PR-AUC; bootstrap CIs]
+[To Do: add either architecture table (comparing the two or something that explains it visually]
 
 \subsection{One-Class SVM}
 One-class SVM is a novelty detection machine learning method that learns a decision function to classify new data as similar or different to the training set. Here, the one-class SVM is trained on the target waveforms of latency constraint detection survivors only and evaluated on held-out targets together with all non-target detections. A survivor was labelled a target if it fell within 2 ms of a ground truth spike. The target waveforms were split into five folds; in each fold, the model was trained on the other four folds and tested on the held-out targets together with all non-targets, and it was verified that no waveform appeared in both partitions of any fold. Predictions were pooled across folds so that each candidate received a single out-of-fold prediction, and metrics were computed once on the full set at the true class ratio. An RBF kernel was used (gamma = scale), and nu ($\nu$) was fixed at 0.1 a priori to avoid tuning the hyperparameter on the evaluation data. nu sets the expected fraction of training points allowed to fall outside of the learning boundary. Because the thresholded F1 of a one-class model is sensitive to nu, threshold-independent measures such as ROC-AUC and average precision (PR-AP) were used to summarise performance, as these are suitable for imbalanced classification  \cite{campos_evaluation_2016}. One-class RBF classifiers are sensitive to feature scaling \cite{juszczak_feature_2002, feragen_adaptive_2015}. Standardisation, which rescales each feature by its standard deviation, is problematic for these waveforms because the low-variance tail samples are divided by a very small standard deviation, amplifying them and distorting the distance used by the RBF kernel, so the boundary rejects almost all candidates; therefore, features were not standardised. 
@@ -178,7 +206,7 @@ One-class SVM is a novelty detection machine learning method that learns a decis
 Unlike one-class SVM, two-class SVM was trained on both target and non-target waveforms to learn the boundary that separates the two classes \cite{worheide_multi-omics_2021}. It was applied to the same latency survivor candidate set as the one-class model. Because targets are a minority of the survivors, class imbalance was handled by class weighting rather than resampling. Features were standardised using a StandardScaler fit on the training folds only and applied to the test fold, in contrast to the one-class model. Similar to one-class, the parameter C was fixed at 1.0 a priori to avoid tuning on the evaluation data.  Evaluation used five-fold stratified cross-validation, with predictions pooled across folds so that each candidate received a single out-of-fold prediction and metrics were computed once on the full set. Similar to one-class, performance was summarised by precision, recall, F1, ROC-AUC and PR-AP. 
 [Still I need To DO: There are some fixes I need to do to my code and add bootstrap (single-arm CIs and paired contrast to both one-class and two-class)]
 
-\section{Denoising methods}
+
 \section{Evaluation metrics}
 \section{After denoising evaluation design}
 
