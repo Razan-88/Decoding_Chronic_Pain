@@ -195,10 +195,11 @@ Where \[\mathcal{L}_{\text{MSE}}\] is the loss being minimised, \[N\] is the num
 
 To denoise the recording, the trained models were applied to overlapping windows sliding across the signal. Each window was normalised by the MAD noise level before the model, to match the training normalisation, then rescaled back, and where windows overlapped, the outputs were averaged.
 The difference between Dense and Convolutional autoencoders is that Dense used fully connected layers, compressing the 60-sample window to 30, then to a 15-unit latent space \cite{li_aecuration_2025}. Whereas Convolutional replaces the fully connected layers with 1D convolutional layers, where each convolutional layer slides a small filter (kernel size 3) across the window to detect local spike-shaped patterns wherever they occur in the window \cite{li_accurate_2020, kechris_removing_2021}. This handles spikes at different positions better than dense 
-[To Do: add either architecture table (comparing the two or something that explains it visually]
+[To Do: add either architecture table (comparing the two or something that explains them visually]
+To assess the quality of each denoiser, the noise level of each denoised signal was measured using MAD \ref{MAD noise estimate}. However, a reduction in noise level does not by itself indicate a better signal for spike sorting; focusing only on noise removal ignores whether the spike morphology is preserved \cite{baldazzi_systematic_2020}. However, \cite{baldazzi_systematic_2020} used RMSE to quantify morphology preservation against a clean reference. Here, the recording is real and noisy ground truth, so peak-to-peak was measured following\cite{adam_comparative_2025}. For each of the target spikes, the peak-to-peak amplitude was computed from the aligned waveforms. Amplitude retention was then expressed as the mean peak-to-peak amplitude of each denoised signal relative to the raw signal. 
 
 \section{Classification (SVM)}
-Two support vector machine (SVM) classifiers with radial basis function (RBF) kernels were applied to trough-aligned waveforms, following the raw waveform approach of \cite{troglio_hybrid_2026}. Both classifiers were evaluated using 5-fold cross-validation following \cite{troglio_hybrid_2026} with a fixed random seed. The candidates from the latency constraint survivors were split into 5 folds, and in each round, the model was trained on 4 folds and used to score the held-out fold. This validation ensures that no candidate is scored by a model trained on it to avoid information leakage. The out-of-fold scores were then pooled across all folds, and the metrics were computed once on the full pooled set to preserve true target / non-target ratio. 
+Two support vector machine (SVM) classifiers with radial basis function (RBF) kernels were applied to trough-aligned waveforms, following the raw waveform approach of \cite{troglio_hybrid_2026}. Both classifiers were evaluated using 5-fold cross-validation following \cite{troglio_hybrid_2026} with a fixed random seed. The candidates from the latency constraint survivors were split into 5 folds, and in each round, the model was trained on 4 folds and used to score the held-out fold. This validation ensures that no candidate is scored by a model trained on it to avoid information leakage. The out-of-fold scores were then pooled across all folds, and the metrics were computed once on the full pooled set to preserve the true target / non-target ratio. 
 \subsection{One-Class SVM}
 One-class SVM is a novelty detection machine learning method that learns a decision function to classify new data as similar or different to the training set. Here, the one-class SVM is trained on the target waveforms of latency constraint detection survivors only and evaluated on held-out targets together with all non-target detections. A survivor was labelled a target if it fell within 2 ms of a ground truth spike. The target waveforms were split into five folds; in each fold, the model was trained on the other four folds and tested on the held-out targets together with all non-targets, and it was verified that no waveform appeared in both partitions of any fold. Predictions were pooled across folds so that each candidate received a single out-of-fold prediction, and metrics were computed once on the full set at the true class ratio. An RBF kernel was used (gamma = scale), and nu ($\nu$) was fixed at 0.1 a priori to avoid tuning the hyperparameter on the evaluation data. nu sets the expected fraction of training points allowed to fall outside of the learning boundary. Because the thresholded F1 of a one-class model is sensitive to nu, threshold-independent measures such as ROC-AUC and average precision (PR-AP) were used to summarise performance, as these are suitable for imbalanced classification  \cite{campos_evaluation_2016}. One-class RBF classifiers are sensitive to feature scaling \cite{juszczak_feature_2002, feragen_adaptive_2015}. Standardisation, which rescales each feature by its standard deviation, is problematic for these waveforms because the low-variance tail samples are divided by a very small standard deviation, amplifying them and distorting the distance used by the RBF kernel, so the boundary rejects almost all candidates; therefore, features were not standardised. 
 \subsection{Two-class svm}
@@ -238,6 +239,7 @@ The analysis used a 900-second recording from channel 19, sampled at 30kHz. With
 \section{Detection performance}
 The candidate spikes used in the pipeline were detected by template matching, retaining peaks that are above a shape similarity threshold, separated by a refractory period and falling within a latency window. 
 The shape similarity threshold was swept from 0.2 to 0.7 \ref{tab: Shape sweep} and the F1 score peaked at a threshold of 0.3, which was selected. Lower thresholds detect more spikes without improving precision, while higher thresholds reject too many detections, leading to a lower recall \ref{tab: Shape sweep}. 
+Detection achieved high recall but at the cost of low precision and a false-positive-to-true-positive ratio of ~2\ref{tab: Baseline detection metrics}. To survive detection, a candidate must match the target template waveform shape and fire within the target's latency window.
 \begin{table}[htbp]
     \centering
     \begin{tabular}{cccccc}
@@ -280,7 +282,7 @@ The latency window was widened symmetrically around the ground truth spikes' med
     \label{tab:latency sweep}
 \end{table}
 
-These selected parameters on raw signal detection produced 329 candidate detections \ref{tab:Beseline detection metrics}. The recall was 0.621, so most of the target spikes were detected, but the FP/TP ratio was 1.99, so roughly ~2 false positives are detected for every true positive. Because these false positives passed both the shape similarity threshold and the latency window, indicating that these false positives resemble the target spikes in both waveform shape and firing latency. This leads to detection achieving high recall but at the cost of low precision. Therefore, the classification stage will address whether these false positives can be separated from the target spikes by waveform shape.   
+These selected parameters on raw signal detection produced 329 candidate detections \ref{tab:Beseline detection metrics}. The recall was 0.621, so most of the target spikes were detected, but the FP/TP ratio was 1.99, so roughly ~2 false positives are detected for every true positive. Because these false positives passed both the shape similarity threshold and the latency window, indicating that these false positives resemble the target spikes in both waveform shape and firing latency, which cannot be distinguished by template matching with latency constraint alone. This is a similar finding of \cite{troglio_hybrid_2026}. Therefore, the classification stage will address whether these false positives can be separated from the target spikes by waveform shape.  
 
 \begin{table}[htbp]
     \centering
@@ -295,8 +297,23 @@ These selected parameters on raw signal detection produced 329 candidate detecti
     \label{tab: Baseline detection metrics}
 \end{table}
 
-\section{Why detection is limited}
 \section{Denoising quality}
+The noise level of each signal was measured by its MAD. All denoisers reduced the noise significantly relative to the raw signal \ref{tab:denoising quality}, with dense achieving the lowest MAD of 0.559 and wavelet the highest MAD of 2.253. When comparing peak-to-peak amplitude across the 177 target spikes, wavelet and dense denoising reduce the spike amplitude significantly, retaining only about 32\% and \%18 of the raw spike amplitude, respectively. Convolutional denoising, on the other hand, preserved the spike, retaining 54\% while reducing noise significantly. 
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{lccc}
+    \toprule
+    Signal & MAD & Peak-toPeak amplitude & Spike retained \\
+    \midrule
+    Raw & 4.958 & 23.92 & 100\% \\
+    Wavelet & 2.253 & 7.59 & 32\% \\
+    Dense & 0.559 & 4.40 & 18\% \\
+    Conv & 0.968 & 13.00 & 54\% \\
+    \bottomrule
+    \end{tabular}
+    \caption{Denosing quality. Each denoiser reduces the noise level (MAD). The mean spike-trough shows that wavelet and dense denoising reduce it significantly, while convolutional autoencoder preserves it. The spike retention is the mean trough relative to the raw signal.}
+    \label{tab:denoising quality}
+\end{table}
 \section{The effect of denoising on detection}
 \section{Classification performance and the effect of denoising}
 
