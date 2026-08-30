@@ -151,7 +151,7 @@ Spikes are detected from their amplitude. Because the target unit's spikes are n
     \label{MAD noise estimate}
 \end{equation}
 Where \(\sigma_{\text{noise}}\) is the median absolute deviation estimate from the previous section and \(k\) is a multiplier controlling how strict the threshold is \cite{quiroga_unsupervised_2004, park_deep_2019}. A downward crossing below this threshold marks a candidate spike. 
-To prevent a single spike being counted more than once, a 3 ms refractory period is enforced after each detection, during which no further detection is registered. The reason the refractory period is longer than what is usually reported (0.66 ms in \cite{laboy-juarez_normalized_2019}; 1.28ms in \cite{rizk_optimizing_2009}) because, when threshold crossings were measured without a refractory period, the median interval between consecutive detections was only 1 ms  (95.6\% of intervals fell below 3ms), which is far shorter than the intervals between successive target spikes, which roughly fire once per stimulus (every ~4 s). A single action potential can last several milliseconds and therefore produce several detections milliseconds apart . 
+To prevent a single spike being counted more than once, a 3 ms refractory period is enforced after each detection, during which no further detection is registered. The reason the refractory period is longer than what is usually reported (0.66 ms in \cite{laboy-juarez_normalized_2019}; 1.28ms in \cite{rizk_optimizing_2009}) because, when threshold crossings were measured without a refractory period, the median interval between consecutive detections was only 1.50 ms  (91.4\% of intervals fell below 3ms), which is far shorter than the intervals between successive target spikes, which roughly fire once per stimulus (every ~4 s). A single action potential can last several milliseconds and therefore produce several detections milliseconds apart. 
 
 
 \subsection{Template building and spike detection}
@@ -217,15 +217,84 @@ ROC-AUC values were interpreted following \cite{hosmer_applied_2013}: an AUC of 
 \subsection{Bootstrap confidence intervals (single arm)}
 Each metric is a single point estimate from one set of candidates. So, due to this finite sample, the uncertainty is quantified with 95\% confidence intervals computed by bootstrap resampling \cite{efron_resampling_2001}, as used for spike sorting performance by \cite{troglio_hybrid_2026}. The candidate set was resampled with replacement 2000 times, and for each resample, the metrics were recomputed using the out-of-fold predictions and scores. Then, the 95\% intervals were taken as the 2.5th and 97.5th percentiles of the resampled values. Any resamples that contained only one class were skipped.  The CIs were computed for all the reported metrics F1, ROC-AUC, PR-AP). The confidence interval reflects the uncertainty around these metrics. For ROC-AUC values, a narrow interval indicates AUC is likely accurate, while a wide interval indicates the AUC value is less reliable \cite{corbacioglu_receiver_2023}; for PR-AP, the corresponding reference is the prevalence baseline, and for F1, the interval conveys the uncertainty around the point estimate. 
 
-\subsection{Paired contrast}
-The single-arm confidence interval tests whether each arm differs from chance, but not whether two arms differ from each other. To test whether small differences between arms are real differences or within sampling noise, a paired bootstrap was used and computed for ROC-AUC, PR-AP and F1. 
 
 \section{After denoising evaluation design}
-
+To separate the effect of denoising on detection from its effect on classification, denoising was applied at two independent stages. The signal used to detect the candidate and the signal from which the classification waveforms were extracted (the cutout). This gives a 2x2 ablation design. The four resulting conditions (arms) are as follows:
+\begin{itemize}
+    \item \textbf{Full raw}: Raw detection, raw cutout (the baseline with no denoising)
+    \item \textbf{Full Denoised}: Denoised detection, denoised cutout (The full denoised pipeline)
+    \item \textbf{Hybrid A}: Denoised detection, raw cutout (denoising aids detection only)
+    \item \textbf{Hybid B}: Raw detection, denoised cutout (denoising aids classification only.     
+\end{itemize}
+Each arm isolates where in the pipeline denoising benefits; comparing them shows whether any benefit comes from better detection, better classification features, both or neither. 
+For the arms to be comparable, the same detection parameters and latency window were applied across all conditions, so the only difference between arms is the signal used, not changes in the pipeline. Each arm was evaluated by running both classifiers and computing the metrics with confidence intervals. 
+The single-arm confidence interval tests whether each arm differs from chance, but not whether two arms differ from each other. To test whether small differences between arms are real differences or within sampling noise, a paired bootstrap was used for this section and computed for ROC-AUC, PR-AP and F1. Only arms that shared the same detection set and differed only in the cutout signal were compared, so that both were evaluated under the same conditions; the two contrasts in this design are: under raw detection (raw versus denoised cutout) and under denoised detection (denoised versus raw cutout) 
+For each of 2000 resamples, the same resampled candidates were scored under both arms, and the difference in the metrics was recorded. The 95\% interval was taken of these differences. The candidate-to-candidate variability is cancelled out as both arms are evaluated on the same resampled candidates, which isolates the effect of the cutout signal. This makes the paired test more sensitive to small differences than comparing two separate intervals \cite{du_when_2025}.
+A difference in intervals that exclude 0 means there is a real difference between arms; it includes 0, it means the difference is within sampling noise. 
 
 \chapter{Single-Channel Results}
 \section{Experimental setup}
+The analysis used a 900-second recording from channel 19, sampled at 30kHz. Within this window, 177 target spikes were identified as ground truth from the fibre of interest, with a median post-stimulus latency of 100.1ms. The raw signal had a noise level (MAD) of 4.958.
 \section{Detection performance}
+The candidate spikes used in the pipeline were detected by template matching, retaining peaks that are above a shape similarity threshold, separated by a refractory period and falling within a latency window. 
+The shape similarity threshold was swept from 0.2 to 0.7 \ref{tab: Shape sweep} and the F1 score peaked at a threshold of 0.3, which was selected. Lower thresholds detect more spikes without improving precision, while higher thresholds reject too many detections, leading to a lower recall \ref{tab: Shape sweep}. 
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{cccccc}
+    \toprule
+     Shape threshold & Detections & Precision & Recall & F1 \\
+     \midrule
+      0.2 & 353 & 0.323 & 0.644 & 0.430 \\ 
+      \textbf{0.3} & \textbf{329} & \textbf{0.334} & \textbf{0.621} & \textbf{0.435} \\
+      0.4 & 253 & 0.336 & 0.480 & 0.395 \\
+      0.5 & 133 & 0.323 & 0.243 & 0.277 \\
+      0.6 & 42 & 0.262 & 0.062 & 0.100 \\
+      0.7 & 9 & 0.444 & 0.023 & 0.043 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Shape similarity threshold sweep for spike detection with the latency window applied. The F1 score peaks at a threshold of 0.3, which was selected for the pipeline.}
+    \label{tab: Shape sweep}
+\end{table}
+
+The latency window was widened symmetrically around the ground truth spikes' median latency of 100.1 ms \ref{tab:latency sweep}. The F1 score peaked at an 8 ms window, which was selected. Narrow windows miss target spikes, leading to a low recall, and a wider window detects more false positives, leading to lower precision. 
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{cccccc}
+    \toprule
+    window (ms) & Width (ms) & kept & Precision & Recall & F1 \\
+    \midrule
+    99.6--100.6 & 1 & 45 & 0.489 & 0.124 & 0.198 \\
+    99.1--101.1 & 2 & 87 & 0.437 & 0.215 & 0.288 \\
+    98.6--101.6 & 3 & 116 & 0.388 & 0.254 & 0.307 \\
+    98.1--102.1 & 4 & 161 & 0.373 & 0.339 & 0.355 \\
+    97.6--102.6 & 5 & 203 & 0.355 & 0.407 & 0.379 \\
+    97.1--103.1 & 6 & 245 & 0.359 & 0.497 & 0.417 \\
+    96.6--103.6 & 7 & 292 & 0.339 & 0.559 & 0.422 \\
+    \textbf{96.1--104.1} & \textbf{8} & \textbf{329} & \textbf{0.334} & \textbf{0.621} & \textbf{0.435} \\
+    95.1--105.1 & 10 & 400 & 0.300 & 0.678 & 0.416 \\
+    94.1--106.1 & 12 & 490 & 0.276 & 0.763 & 0.405 \\
+    93.1--107.1 & 14 & 566 & 0.253 & 0.808 & 0.385 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Latency window sweep for spike detection. The window is centred on the median latency (100.1 ms) and widened symmetrically. The F1 score peaks at an 8 ms window (half-width of 4 ms, 96.1 - 104.1ms). which was selected for the pipeline}
+    \label{tab:latency sweep}
+\end{table}
+
+These selected parameters on raw signal detection produced 329 candidate detections \ref{tab:Beseline detection metrics}. The recall was 0.621, so most of the target spikes were detected, but the FP/TP ratio was 1.99, so roughly ~2 false positives are detected for every true positive. Because these false positives passed both the shape similarity threshold and the latency window, indicating that these false positives resemble the target spikes in both waveform shape and firing latency. This leads to detection achieving high recall but at the cost of low precision. Therefore, the classification stage will address whether these false positives can be separated from the target spikes by waveform shape.   
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{ccccccc}
+    \toprule
+    TP & FP & FN & Precision & Recall & F1 & FP/TP \\
+    \midrule
+    110 & 219 & 67 & 0.334 & 0.621 & 0.435 & 1.99 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Detection performance on the raw signal, using the selected parameters: shape threshold 0.3, 3 ms refractory, 8 ms latency window. Reported following \cite{troglio_hybrid_2026} including the false-positive-to-true-positive ratio (FP/TP).}
+    \label{tab: Baseline detection metrics}
+\end{table}
+
 \section{Why detection is limited}
 \section{Denoising quality}
 \section{The effect of denoising on detection}

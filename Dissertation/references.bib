@@ -2424,3 +2424,19 @@ title = {What is the value of the area under the roc curve (AUC) to conclude tha
     year = {2023},
     pages = {195--198},
 }
+@misc{du_when_2025,
+    title = {When +1\% {Is} {Not} {Enough}: {A} {Paired} {Bootstrap} {Protocol} for {Evaluating} {Small} {Improvements}},
+    copyright = {Creative Commons Attribution 4.0 International},
+    shorttitle = {When +1\% {Is} {Not} {Enough}},
+    url = {https://arxiv.org/abs/2511.19794},
+    doi = {10.48550/ARXIV.2511.19794},
+    abstract = {Recent machine learning papers often report 1-2 percentage point improvements from a single run on a benchmark. These gains are highly sensitive to random seeds, data ordering, and implementation details, yet are rarely accompanied by uncertainty estimates or significance tests. It is therefore unclear when a reported +1-2\% reflects a real algorithmic advance versus noise.
+ We revisit this problem under realistic compute budgets, where only a few runs are affordable. We propose a simple, PC-friendly evaluation protocol based on paired multi-seed runs, bias-corrected and accelerated (BCa) bootstrap confidence intervals, and a sign-flip permutation test on per-seed deltas. The protocol is intentionally conservative and is meant as a guardrail against over-claiming.
+ We instantiate it on CIFAR-10, CIFAR-10N, and AG News using synthetic no-improvement, small-gain, and medium-gain scenarios. Single runs and unpaired t-tests often suggest significant gains for 0.6-2.0 point improvements, especially on text. With only three seeds, our paired protocol never declares significance in these settings. We argue that such conservative evaluation is a safer default for small gains under tight budgets.},
+    urldate = {2026-08-30},
+    publisher = {arXiv},
+    author = {Du, Wenzhang},
+    year = {2025},
+    note = {Version Number: 1},
+    keywords = {62F40, 62G09, FOS: Computer and information sciences, I.5.2; G.3; H.3.4, Machine Learning (cs.LG), Machine Learning (stat.ML)},
+}
