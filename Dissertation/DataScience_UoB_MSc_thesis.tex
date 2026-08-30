@@ -217,8 +217,6 @@ ROC-AUC values were interpreted following \cite{hosmer_applied_2013}: an AUC of 
 
 \subsection{Bootstrap confidence intervals (single arm)}
 Each metric is a single point estimate from one set of candidates. So, due to this finite sample, the uncertainty is quantified with 95\% confidence intervals computed by bootstrap resampling \cite{efron_resampling_2001}, as used for spike sorting performance by \cite{troglio_hybrid_2026}. The candidate set was resampled with replacement 2000 times, and for each resample, the metrics were recomputed using the out-of-fold predictions and scores. Then, the 95\% intervals were taken as the 2.5th and 97.5th percentiles of the resampled values. Any resamples that contained only one class were skipped.  The CIs were computed for all the reported metrics F1, ROC-AUC, PR-AP). The confidence interval reflects the uncertainty around these metrics. For ROC-AUC values, a narrow interval indicates AUC is likely accurate, while a wide interval indicates the AUC value is less reliable \cite{corbacioglu_receiver_2023}; for PR-AP, the corresponding reference is the prevalence baseline, and for F1, the interval conveys the uncertainty around the point estimate. 
-
-
 \section{After denoising evaluation design}
 To separate the effect of denoising on detection from its effect on classification, denoising was applied at two independent stages. The signal used to detect the candidate and the signal from which the classification waveforms were extracted (the cutout). This gives a 2x2 ablation design. The four resulting conditions (arms) are as follows:
 \begin{itemize}
@@ -283,7 +281,6 @@ The latency window was widened symmetrically around the ground truth spikes' med
 \end{table}
 
 These selected parameters on raw signal detection produced 329 candidate detections \ref{tab:Beseline detection metrics}. The recall was 0.621, so most of the target spikes were detected, but the FP/TP ratio was 1.99, so roughly ~2 false positives are detected for every true positive. Because these false positives passed both the shape similarity threshold and the latency window, indicating that these false positives resemble the target spikes in both waveform shape and firing latency, which cannot be distinguished by template matching with latency constraint alone. This is a similar finding of \cite{troglio_hybrid_2026}. Therefore, the classification stage will address whether these false positives can be separated from the target spikes by waveform shape.  
-
 \begin{table}[htbp]
     \centering
     \begin{tabular}{ccccccc}
@@ -296,14 +293,13 @@ These selected parameters on raw signal detection produced 329 candidate detecti
     \caption{Detection performance on the raw signal, using the selected parameters: shape threshold 0.3, 3 ms refractory, 8 ms latency window. Reported following \cite{troglio_hybrid_2026} including the false-positive-to-true-positive ratio (FP/TP).}
     \label{tab: Baseline detection metrics}
 \end{table}
-
 \section{Denoising quality}
-The noise level of each signal was measured by its MAD. All denoisers reduced the noise significantly relative to the raw signal \ref{tab:denoising quality}, with dense achieving the lowest MAD of 0.559 and wavelet the highest MAD of 2.253. When comparing peak-to-peak amplitude across the 177 target spikes, wavelet and dense denoising reduce the spike amplitude significantly, retaining only about 32\% and \%18 of the raw spike amplitude, respectively. Convolutional denoising, on the other hand, preserved the spike, retaining 54\% while reducing noise significantly. 
+The noise level of each signal was measured by its MAD. All denoisers reduced the noise significantly relative to the raw signal \ref{tab:denoising quality}, with dense achieving the lowest MAD of 0.559 and wavelet the highest MAD of 2.253. When comparing peak-to-peak amplitude across the 177 target spikes, wavelet and dense denoising reduce the spike amplitude significantly, retaining only about 32\% and \%18 of the raw spike amplitude, respectively. Convolutional denoising, on the other hand, preserved the spike, retaining 54\% while reducing noise significantly, which can also be seen in figure \ref{fig:denoising}. 
 \begin{table}[htbp]
     \centering
     \begin{tabular}{lccc}
     \toprule
-    Signal & MAD & Peak-toPeak amplitude & Spike retained \\
+    Signal & MAD & Peak-to-Peak amplitude & Spike retained \\
     \midrule
     Raw & 4.958 & 23.92 & 100\% \\
     Wavelet & 2.253 & 7.59 & 32\% \\
@@ -314,6 +310,12 @@ The noise level of each signal was measured by its MAD. All denoisers reduced th
     \caption{Denosing quality. Each denoiser reduces the noise level (MAD). The mean spike-trough shows that wavelet and dense denoising reduce it significantly, while convolutional autoencoder preserves it. The spike retention is the mean trough relative to the raw signal.}
     \label{tab:denoising quality}
 \end{table}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/denoising_quality.png}
+    \caption{Effect of each denoiser on the signal. Left is an overview of a segment around a target spike. Right is a detail view of the spike.}
+    \label{fig:denoising}
+\end{figure}
 \section{The effect of denoising on detection}
 \section{Classification performance and the effect of denoising}
 
