@@ -177,7 +177,7 @@ The signal was decomposed using Daubechies 4 to decomposition level 4 to give ap
     \lambda = \sigma \sqrt{2 \ln N}
     \label{VisuShrink}
 \end{equation}
-Where \[N\] is the number of coefficients at that level \cite{donoho_minimax_1998}. 
+Where $N$ is the number of coefficients at that level \cite{donoho_minimax_1998}. 
 The detail coefficients were shrunk using soft thresholding using the following formula:
 \begin{equation}
     \eta(x, \lambda) = \text{sign}(x)\, \max(|x| - \lambda,\, 0)
@@ -186,12 +186,13 @@ The detail coefficients were shrunk using soft thresholding using the following 
 This shrinks the coefficients towards zero instead of removing them. The approximation coefficients were left unchanged. The denoised signal is then reconstructed back from the cleaned coefficients to a time-domain signal by inverse SWT. Soft thresholding was chosen over hard thresholding to allow for smoother reconstruction and to avoid sharp discontinuities\cite{zhang_improved_2019}. 
 \subsection{Dense and Convolutional Autoencoders}
 Two autoencoder denoisers were used: dense and convolutional autoencoders. Both autoencoders were trained on the same data and applied to the signal in the same way; they only differ in their internal architecture. 
-Denoising Autoencoders generally require clean signals as a target reference during training so the model can calculate its reconstructive loss \cite{vincent_extracting_2008}. With real extracellular recordings, there is no clean reference, so training pairs were generated synthetically from the real spike template. The continuous signal was divided into 60 sample windows; each window was created as one of two types: a window that contains the template spike or only a noisy window. For the windows with a spike, the template was randomly shifted and scaled so the model learns to see spikes at different positions and amplitudes. To each clean window, Gaussian noise was then added to produce the noisy input, giving pairs of noisy input and clean target. For training, both autoencoders used the Adam optimiser was to minimise the mean squared error (MSE) between the reconstruction output and the clean target:
+Denoising Autoencoders generally require clean signals as a target reference during training so the model can calculate its reconstructive loss \cite{vincent_extracting_2008}. With real extracellular recordings, there is no clean reference, so training pairs were generated synthetically from the real spike template. The continuous signal was divided into 60 sample windows; each window was created as one of two types: a window that contains the template spike or only a noisy window. For the windows with a spike, the template was randomly shifted and scaled so the model learns to see spikes at different positions and amplitudes. To each clean window, Gaussian noise was then added to produce the noisy input, giving pairs of noisy input and clean target. For training, both autoencoders used the Adam optimiser to minimise the mean squared error (MSE) between the reconstruction output and the clean target:
 \begin{equation}
     \mathcal{L}_{\text{MSE}} = \frac{1}{N} \sum_{i=1}^{N} \left( x_i - \hat{x}_i \right)^2
     \label{MSE}
 \end{equation}
-Where \[\mathcal{L}_{\text{MSE}}\] is the loss being minimised, \[N\] is the number of samples, \[x_i\] is the clean target value and \[\hat{x}_i\] is the reconstructed output from the Autoencoder \cite{jadon_comprehensive_2022}. 
+
+Where $mathcal{L}_{\text{MSE}}$ is the loss being minimised, $N$ is the number of samples, $x_i$ is the clean target value, and $hat{x}_i$ is the reconstructed output from the Autoencoder \cite{jadon_comprehensive_2022}. 
 
 To denoise the recording, the trained models were applied to overlapping windows sliding across the signal. Each window was normalised by the MAD noise level before the model, to match the training normalisation, then rescaled back, and where windows overlapped, the outputs were averaged.
 The difference between Dense and Convolutional autoencoders is that Dense used fully connected layers, compressing the 60-sample window to 30, then to a 15-unit latent space \cite{li_aecuration_2025}. Whereas Convolutional replaces the fully connected layers with 1D convolutional layers, where each convolutional layer slides a small filter (kernel size 3) across the window to detect local spike-shaped patterns wherever they occur in the window \cite{li_accurate_2020, kechris_removing_2021}. This handles spikes at different positions better than dense 
@@ -230,11 +231,19 @@ For the arms to be comparable, the same detection parameters and latency window 
 The single-arm confidence interval tests whether each arm differs from chance, but not whether two arms differ from each other. To test whether small differences between arms are real differences or within sampling noise, a paired bootstrap was used for this section and computed for ROC-AUC, PR-AP and F1. Only arms that shared the same detection set and differed only in the cutout signal were compared, so that both were evaluated under the same conditions; the two contrasts in this design are: under raw detection (raw versus denoised cutout) and under denoised detection (denoised versus raw cutout) 
 For each of 2000 resamples, the same resampled candidates were scored under both arms, and the difference in the metrics was recorded. The 95\% interval was taken of these differences. The candidate-to-candidate variability is cancelled out as both arms are evaluated on the same resampled candidates, which isolates the effect of the cutout signal. This makes the paired test more sensitive to small differences than comparing two separate intervals \cite{du_when_2025}.
 A difference in intervals that exclude 0 means there is a real difference between arms; it includes 0, it means the difference is within sampling noise. 
+\section{Leakage safe evaluation protocol}
+The pipeline described in sections 3.1-3.7 was tuned and evaluated on the same 900-second window: the template, the denoisers and the detection parameters were all derived from the same data used for evaluation. This can produce optimistic performance estimates. To obtain an unbiased estimate, a leakage-safe evaluation was performed on a held-out portion of the recording.  
+The recording was divided chronologically into a development set of the first 70\% [3602.7-4232.7 s], which contained 166 target spikes and a held-out evaluation set of the last 30\% [4232.7-4502.7 s], which contained 61 target spikes. All tuning used the development set; the evaluation set was scored once. 
+All component that could carry information across the split was fitted on the development set only. So, the spike template was built from development annotations only; the denoisers were trained on synthetic data that is derived from the development template, except wavelet, as the wavelet transform has no trainable component.  The detection parameters like shape similarity threshold and latency window were selected by maximising F1 on the development set. 
+For the classifiers, the aligned raw waveform (90 samples, trough-aligned) was cut from the cutout signal and used directly as the feature vector, following \cite{troglio_hybrid_2026}. The classifier and its scaler were fitted on the development survivors only, with fixed hyperparameters and scored once on the evaluation survivors. The confidence intervals were computed by stratified bootstrap resampling of the evaluation candidates.
+To note, for the held-out selection, different parameters were chosen (shape threshold [0.2], latency half width [2 ms]) from the exploratory analysis in the sections below (0.3, 4ms).
 
 \chapter{Single-Channel Results}
 \section{Experimental setup}
 The analysis used a 900-second recording from channel 19, sampled at 30kHz. Within this window, 177 target spikes were identified as ground truth from the fibre of interest, with a median post-stimulus latency of 100.1ms. The raw signal had a noise level (MAD) of 4.958.
+ 
 \section{Detection performance}
+\subsection{Development analysis}
 The candidate spikes used in the pipeline were detected by template matching, retaining peaks that are above a shape similarity threshold, separated by a refractory period and falling within a latency window. 
 The shape similarity threshold was swept from 0.2 to 0.7 \ref{tab: Shape sweep} and the F1 score peaked at a threshold of 0.3, which was selected. Lower thresholds detect more spikes without improving precision, while higher thresholds reject too many detections, leading to a lower recall \ref{tab: Shape sweep}. 
 Detection achieved high recall but at the cost of low precision and a false-positive-to-true-positive ratio of ~2\ref{tab: Baseline detection metrics}. To survive detection, a candidate must match the target template waveform shape and fire within the target's latency window.
@@ -279,7 +288,6 @@ The latency window was widened symmetrically around the ground truth spikes' med
     \caption{Latency window sweep for spike detection. The window is centred on the median latency (100.1 ms) and widened symmetrically. The F1 score peaks at an 8 ms window (half-width of 4 ms, 96.1 - 104.1ms). which was selected for the pipeline}
     \label{tab:latency sweep}
 \end{table}
-
 These selected parameters on raw signal detection produced 329 candidate detections \ref{tab:Beseline detection metrics}. The recall was 0.621, so most of the target spikes were detected, but the FP/TP ratio was 1.99, so roughly ~2 false positives are detected for every true positive. Because these false positives passed both the shape similarity threshold and the latency window, indicating that these false positives resemble the target spikes in both waveform shape and firing latency, which cannot be distinguished by template matching with latency constraint alone. This is a similar finding of \cite{troglio_hybrid_2026}. Therefore, the classification stage will address whether these false positives can be separated from the target spikes by waveform shape.  
 \begin{table}[htbp]
     \centering
@@ -293,7 +301,53 @@ These selected parameters on raw signal detection produced 329 candidate detecti
     \caption{Detection performance on the raw signal, using the selected parameters: shape threshold 0.3, 3 ms refractory, 8 ms latency window. Reported following \cite{troglio_hybrid_2026} including the false-positive-to-true-positive ratio (FP/TP).}
     \label{tab: Baseline detection metrics}
 \end{table}
+\subsection{Held-out evaluation}
+The shape similarity and latency window were swept, and the combination chosen was the one that maximised F1 on the development period \ref{tab:dev-sweep}. The shape threshold chosen was 0.2 and a latency window of 4 ms (2 ms half window). 
+These parameters were then applied to the held-out evaluation period and scored once against the evaluation. On raw signal, detection showed 68 survivors, of which 18 were true positives and 50 false positives, giving a precision of 0.265 and a recall of 0.295 and an F1 of 0.279. The false positives to true positives ratio was 2.78. 
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{cccccc}
+    \toprule
+    Shape threshold & Latency half-width (ms) & Kept & Precision & Recall & F1 \\
+    \midrule
+    \textbf{0.2} & \textbf{2} & \textbf{114} & \textbf{0.553} & \textbf{0.543} & \textbf{0.548} \\
+    0.3 & 2 & 103 & 0.544 & 0.483 & 0.511 \\
+    0.4 & 3 & 86 & 0.372 & 0.276 & 0.317 \\
+    0.5 & 5 & 28 & 0.321 & 0.078 & 0.125 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Detection parameter selection on the development set. The shape similarity threshold and latency half-width window were swept; the combination selected for the held-out evaluation that maximised F1 were (shape 0.2, half-width 2 ms).}
+    \label{tab:dev-sweep}
+\end{table}
+
 \section{Denoising quality}
+\subsection{Held-out evaluation}
+The denoising quality was assessed by the noise level (MAD) and the peak-to-peak relative to the raw signal. All three denoisers reduced the noise level \ref{tab:denoising-quality-heldout}. When comparing the peak-to-peak amplitude across the target spikes showed that dense retained only 18\% of the raw amplitude, wavelet 32\% and convolutional 66\%. The figure~\ref{} shows this in detail view; the raw and convolutional spikes remain deep while the wavelet and dense spikes are visibly attenuated. 
+A similar pattern was observed with the development analysis; dense was the most destructive. This shows that the effect is a general property of the denoising, not a consequence of one particular training setup.
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{lccc}
+    \toprule
+    Signal & MAD & Peak-to-peak amplitude & Amplitude retained  \\
+    \midrule
+    Raw & 4.958 & 24.07 & 100\%  \\
+    Wavelet & 2.253 & 7.62 & 32\% \\
+    Dense & 0.765 & 4.38 & 10\% \\
+    Conv & 2.885 & 15.89 & 66\% \\
+    \bottomrule
+    \end{tabular}
+    \caption{Denoising quality (leakage-safe denoisers). Each denoiser reduces the noise level (MAD). With peak-to-peak relative to raw, convolutional autoencoder preserved the most amplitude; dense the least. }
+    \label{tab:denoising-quality-heldout}
+\end{table}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{}
+    \caption{Caption}
+    \label{fig:placeholder}
+\end{figure}
+
+
+\subsection{Development analysis}
 The noise level of each signal was measured by its MAD. All denoisers reduced the noise significantly relative to the raw signal \ref{tab:denoising quality}, with dense achieving the lowest MAD of 0.559 and wavelet the highest MAD of 2.253. When comparing peak-to-peak amplitude across the 177 target spikes, wavelet and dense denoising reduce the spike amplitude significantly, retaining only about 32\% and \%18 of the raw spike amplitude, respectively. Convolutional denoising, on the other hand, preserved the spike, retaining 54\% while reducing noise significantly, which can also be seen in figure \ref{fig:denoising}. 
 \begin{table}[htbp]
     \centering
@@ -316,8 +370,122 @@ The noise level of each signal was measured by its MAD. All denoisers reduced th
     \caption{Effect of each denoiser on the signal. Left is an overview of a segment around a target spike. Right is a detail view of the spike.}
     \label{fig:denoising}
 \end{figure}
+
+
+
 \section{The effect of denoising on detection}
+\subsection{Development analysis}
+To test the effect of denoising on detection, the detection pipeline was run the same on the raw signal and each denoised signal, using the same parameters throughout. As seen \ref{}, denoising did not increase the number of true positives or the recall; both remained similar across all signals (TP ~110, recall ~0.61). The number of false positives has increased slightly with denoising, from 219 for raw to 234 for conv, which in turn reduced precision and F1 and raised the FP/TP ratio. This pattern was strongest for the denoisers that significantly lowered the noise level (dense and conv). 
+
+These additional detections were assessed using the standard spike sorting quality metrics\cite{hill_quality_2011}. When comparing the survivors across signals, approximately 82\% of denoised detections matched a raw detection within 2 ms, and the remaining 18\% were at new locations.
+These additional detections from the denoised signal were checked to determine whether they were real spikes or denoising artefacts. Their mean waveform in the raw signal showed a clear spike trough of -9.56, compared to the target spikes -11.856; they respected the refractory period, so there were no inter-spike intervals below 1 ms. Their peak-to-peak amplitudes were comparable to the target spikes (median 22.36 vs 23.91). This indicates that the additional detections are actual spikes rather than artefacts created by denoising. 
+\subsection{Held-out evaluation}
+
 \section{Classification performance and the effect of denoising}
+\subsection{Held-out evaluation}
+
+
+\subsection{Development analysis}
+The survivors from detection were classified as target or non-target using two SVM classifiers, a one-class and a two-class SVM. Both were evaluated by 5-fold out-of-fold cross-validation with fixed hyperparameters and performance was evaluated by ROC-AUC, PR-AP, and F1, each with a 95\% bootstrap confidence interval.  
+For the one-class SVM, the ROC-AUC across all arms and denoisers remained close to 0.5, and every 95\% confidence interval included 0.5 \ref{tab:oneclass-cis}. This indicates that performance is indistinguishable from chance. 
+The two-class SVM showed a similar pattern to the one-class SVM; ROC-AUC also remained near 0.5 with every confidence interval including 0.5. Therefore, both classifiers were at chance across all conditions. 
+\begin{table}[htbp]
+    \centering
+    \small
+    \begin{tabular}{llccc}
+    \toprule
+    Denoiser  & Arm & F1 [95\% CI] & ROC-AUC [95\% CI] & PR-AP [95\% CI] \\
+    \midrule
+    \multirow{4}{*}{Wavelet}
+    & Full Raw & 0.460 [0.387, 0.523] & 0.520 [0.452, 0.583] & 0.363 [0.296, 0.446] \\
+    & Full Denoised & 0.483 [0.417, 0.542] & 0.495 [0.430, 0.561] & 0.333 [0.277, 0.405] \\
+    & Hybrid A & 0.438 [0.372, 0.503] & 0.492 [0.431, 0.555] & 0.334 [0.277, 0.408] \\
+    & Hybrid B & 0.495 [0.433, 0.551] & 0.526 [0.458, 0.595] & 0.364[0.300, 0.451] \\
+    \midrule
+    \multirow{4}{*}{Dense}
+    & Full Raw & 0.460 [0.387, 0.523] & 0.520 [0.452, 0.583] & 0.363 [0.296, 0.446] \\
+    & Full Denoised & 0.489 [0.425, 0.548] & 0.478 [0.412, 0.543] & 0.341 [0.274, 0.420] \\
+    & Hybrid A & 0.414 [0.349, 0.479] & 0.464 [0.398, 0.534] & 0.327 [0.271, 0.412] \\
+    & Hybrid B & 0.490 [0.430, 0.551] & 0.495 [0.429, 0.558] & 0.351 [0.289, 0.431] \\
+    \midrule
+    \multirow{4}{*}{Conv}
+    & Full Raw & 0.460 [0.387, 0.523] & 0.520 [0.452, 0.583] & 0.363 [0.296, 0.446] \\
+    & Full Denoised & 0.469 [0.400, 0.528] & 0.482 [0.418, 0.543] & 0.332 [0.275, 0.404] \\
+    & Hybrid A & 0.472 [0.4.4, 0.532] & 0.519 [0.453, 0.585] & 0.356 [0.294, 0.435] \\
+    & Hybrid B & 0.487 [0.423, 0.548] & 0.507 [0.444, 0.570] & 0.344 [0.287, 0.418] \\ 
+    \bottomrule
+    \end{tabular}
+    \caption{One-class SVM classification performance across 2$\times$2 ablation for each denoiser. Each metric is shown with its 95\% bootstrap confidence interval. Every ROC-AUC interval includes 0.5, indicating performance can not be distinguished from chance.} 
+    \label{tab:oneclass-cis}
+\end{table}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{llccc}
+    \toprule
+     Denoiser & Arm & F1 [95\% CI] & ROC-AUC [95\% CI] & PR-AP [95\% CI] \\
+     \midrule
+     \multirow{4}{*}{Wavelet}
+    & Full raw &  0.349 [0.266, 0.427] & 0.484 [0.419, 0.548] & 0.353[0.292, 0.444] \\
+    & Full Denoised & 0.334 [0.265, 0.404] & 0.437 [0.373, 0.501] & 0.304 [0.255, 0.371] \\
+    & Hybrid A & 0.346 [0.267, 0.421] & 0.449 [0.385, 0.512] & 0.317 [0.263, 0.392] \\
+    & Hybrid B & 0.346 [0.273, 0.419] &  0.415 [0.347, 0.475] & 0.300 [0.248, 0.374] \\
+    \midrule
+    \multirow{4}{*}{Dense}
+    & Full raw & 0.349 [0.266, 0.427] & 0.484 [0.219, 0.548] & 0.353 [0.292, 0.444] \\
+    & Full Denoised & 0.354 [0.277, 0.429] & 0.463 [0.395, 0.529] & 0.340 [0.273, 0.421] \\
+    & Hybrid A & 0.314 [0.233, 0.395] & 0.479 [0.415, 0.546] & 0.343 [0.279, 0.431] \\
+    & Hybrid B & 0.323 [0.247, 0.398] & 0.439 [0.372, 0.507] & 0.318 [0.262, 0.398] \\
+    \midrule
+    \multirow{4}{*}{Conv}
+    & Full raw & 0.349 [0.266, 0.427] & 0.484 [0.419, 0.548] & 0.353 [0.292, 0.444] \\
+    & Full Denoised & 0.288 [0.208, 0.364] & 0.451 [0.388, 0.514] & 0.315 [0.263, 0.379] \\
+    & Hybrid A & 0.379 [0.296, 0.457] & 0.542 [0.477, 0.605] & 0.383 [0.316, 0.471] \\
+    & Hybrid B & 0.340 [0.265, 0.412] & 0.456 [0.392, 0.516] & 0.307 [0.255, 0.374] \\
+    \bottomrule
+    \end{tabular}
+    \caption{Two-CLass SVM classification performance across the 2$\times$2 ablation, for each denoiser, with 95\% bootstrap confidence intervals. Every ROC-AUC interval includes 0.5.} 
+    \label{tab:Twoclass-cis}
+\end{table}
+
+The confusion metrics table below \ref{tab:confusion} shows why classifiers are at chance. In every arm, the false positives to true positives ratio is more than 1, which means that the classifier is accepting more non-target than target candidates. Both classifiers accept targets and non-targets at similar rates, which explains the at-chance ROC-AUC. 
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{llcccccccc}
+    \toprule
+    Classifier & Arm & TP & FP & FN & TN & FP/TP & precision & Recall & F1 \\
+    \midrule
+    \multirow{4}{*}{One-class}
+    & Full raw & 74 & 135 & 39 & 81 & 1.82 & 0.354 & 0.655 & 0.460 \\
+    & Full denoised & 86 & 163 & 32 & 62 & 1.90 & 0.345 & 0.729 & 0.469 \\
+    & Hybrid A & 79 & 138 & 39 & 87 & 1.75 & 0.364 & 0.669 & 0.487 \\
+    & Hybrid B & 84 & 148 & 29 & 68 & 1.76 & 0.362 & 0.743 & 0.487 \\
+    \midrule
+    \multirow{4}{*}{Two-class}
+    & Full raw & 38 & 67 & 75 & 149 & 1.76 & 0.362 & 0.336 & 0.349 \\
+    & Full denoised & 34 & 84 & 84 & 141 & 2.47 & 0.288 & 0.288 & 0.288 \\
+    & Hybrid A & 46 & 79 & 72 & 146 & 1.72 & 0.368 & 0.390 & 0.379 \\
+    & Hybrid B & 41 & 87 & 72 & 129 & 2.12 & 0.320 & 0.363 & 0.340 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Confusion matrix counts and derived metrics for the convolutional denoiser for both classifiers. The false positives to true positive ratio (FP/TP) exceeds 1 in every arm, which indicates more false positives than true positives.}
+    \label{tab:confusion}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lllcc}
+    \toprule
+    Denoiser & Detection & Metric & $\Delta$ & 95\% CI\\
+    \midrule
+    Conv & Conv & ROC-AUC & +0.091 & [+0.012, +0.170]* \\
+    Conv & Conv & F1 & +0.091 & [+0.003, +0.180]* \\
+    Conv & Conv & PR-AP & +0.070 & [+0.011, +0.133]* \\
+    \bottomrule
+    \end{tabular}
+    \caption{Paired bootstrap difference for two-class SVM. A 95\% CI excluding zero (*) indicates a significant difference. Out of all denoisers, the convolutional denoiser under its own detection shows a significant effect, where the raw cutout outperforms the denoised cutout.}
+    \label{tab:Paired-twoclass}
+\end{table}
 
 
 \chapter{Discussion}
