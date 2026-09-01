@@ -243,7 +243,26 @@ To note, for the held-out selection, different parameters were chosen (shape thr
 The analysis used a 900-second recording from channel 19, sampled at 30kHz. Within this window, 177 target spikes were identified as ground truth from the fibre of interest, with a median post-stimulus latency of 100.1ms. The raw signal had a noise level (MAD) of 4.958.
  
 \section{Detection performance}
-\subsection{Development analysis}
+\subsection{Held-out evaluation}
+The shape similarity and latency window were swept, and the combination chosen was the one that maximised F1 on the development period \ref{tab:dev-sweep}. The shape threshold chosen was 0.2 and a latency window of 4 ms (2 ms half window). 
+These parameters were then applied to the held-out evaluation period and scored once against the evaluation. On raw signal, detection showed 68 survivors, of which 18 were true positives and 50 false positives, giving a precision of 0.265 and a recall of 0.295 and an F1 of 0.279. The false positives to true positives ratio was 2.78. 
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{cccccc}
+    \toprule
+    Shape threshold & Latency half-width (ms) & Kept & Precision & Recall & F1 \\
+    \midrule
+    \textbf{0.2} & \textbf{2} & \textbf{114} & \textbf{0.553} & \textbf{0.543} & \textbf{0.548} \\
+    0.3 & 2 & 103 & 0.544 & 0.483 & 0.511 \\
+    0.4 & 3 & 86 & 0.372 & 0.276 & 0.317 \\
+    0.5 & 5 & 28 & 0.321 & 0.078 & 0.125 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Detection parameter selection on the development set. The shape similarity threshold and latency half-width window were swept; the combination selected for the held-out evaluation that maximised F1 were (shape 0.2, half-width 2 ms).}
+    \label{tab:dev-sweep}
+\end{table}
+
+\subsection{Exploratory/ Development analysis}
 The candidate spikes used in the pipeline were detected by template matching, retaining peaks that are above a shape similarity threshold, separated by a refractory period and falling within a latency window. 
 The shape similarity threshold was swept from 0.2 to 0.7 \ref{tab: Shape sweep} and the F1 score peaked at a threshold of 0.3, which was selected. Lower thresholds detect more spikes without improving precision, while higher thresholds reject too many detections, leading to a lower recall \ref{tab: Shape sweep}. 
 Detection achieved high recall but at the cost of low precision and a false-positive-to-true-positive ratio of ~2\ref{tab: Baseline detection metrics}. To survive detection, a candidate must match the target template waveform shape and fire within the target's latency window.
@@ -301,28 +320,10 @@ These selected parameters on raw signal detection produced 329 candidate detecti
     \caption{Detection performance on the raw signal, using the selected parameters: shape threshold 0.3, 3 ms refractory, 8 ms latency window. Reported following \cite{troglio_hybrid_2026} including the false-positive-to-true-positive ratio (FP/TP).}
     \label{tab: Baseline detection metrics}
 \end{table}
-\subsection{Held-out evaluation}
-The shape similarity and latency window were swept, and the combination chosen was the one that maximised F1 on the development period \ref{tab:dev-sweep}. The shape threshold chosen was 0.2 and a latency window of 4 ms (2 ms half window). 
-These parameters were then applied to the held-out evaluation period and scored once against the evaluation. On raw signal, detection showed 68 survivors, of which 18 were true positives and 50 false positives, giving a precision of 0.265 and a recall of 0.295 and an F1 of 0.279. The false positives to true positives ratio was 2.78. 
-\begin{table}[htbp]
-    \centering
-    \begin{tabular}{cccccc}
-    \toprule
-    Shape threshold & Latency half-width (ms) & Kept & Precision & Recall & F1 \\
-    \midrule
-    \textbf{0.2} & \textbf{2} & \textbf{114} & \textbf{0.553} & \textbf{0.543} & \textbf{0.548} \\
-    0.3 & 2 & 103 & 0.544 & 0.483 & 0.511 \\
-    0.4 & 3 & 86 & 0.372 & 0.276 & 0.317 \\
-    0.5 & 5 & 28 & 0.321 & 0.078 & 0.125 \\
-    \bottomrule
-    \end{tabular}
-    \caption{Detection parameter selection on the development set. The shape similarity threshold and latency half-width window were swept; the combination selected for the held-out evaluation that maximised F1 were (shape 0.2, half-width 2 ms).}
-    \label{tab:dev-sweep}
-\end{table}
 
 \section{Denoising quality}
 \subsection{Held-out evaluation}
-The denoising quality was assessed by the noise level (MAD) and the peak-to-peak relative to the raw signal. All three denoisers reduced the noise level \ref{tab:denoising-quality-heldout}. When comparing the peak-to-peak amplitude across the target spikes showed that dense retained only 18\% of the raw amplitude, wavelet 32\% and convolutional 66\%. The figure~\ref{} shows this in detail view; the raw and convolutional spikes remain deep while the wavelet and dense spikes are visibly attenuated. 
+The denoising quality was assessed by the noise level (MAD) and the peak-to-peak relative to the raw signal. All three denoisers reduced the noise level \ref{tab:denoising-quality-heldout}. When comparing the peak-to-peak amplitude across the target spikes showed that dense retained only 18\% of the raw amplitude, wavelet 32\% and convolutional 66\%. The figure~\ref{fig:denoising} shows this in detail view; the raw and convolutional spikes remain deep while the wavelet and dense spikes are visibly attenuated. 
 A similar pattern was observed with the development analysis; dense was the most destructive. This shows that the effect is a general property of the denoising, not a consequence of one particular training setup.
 \begin{table}[htbp]
     \centering
@@ -332,7 +333,7 @@ A similar pattern was observed with the development analysis; dense was the most
     \midrule
     Raw & 4.958 & 24.07 & 100\%  \\
     Wavelet & 2.253 & 7.62 & 32\% \\
-    Dense & 0.765 & 4.38 & 10\% \\
+    Dense & 0.765 & 4.38 & 18\% \\
     Conv & 2.885 & 15.89 & 66\% \\
     \bottomrule
     \end{tabular}
@@ -341,13 +342,11 @@ A similar pattern was observed with the development analysis; dense was the most
 \end{table}
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\linewidth]{}
-    \caption{Caption}
-    \label{fig:placeholder}
+    \includegraphics[width=\textwidth]{figures/denoising_quality_leakage_safe.png}
+    \caption{Effect of each denoiser on the signal (leakage-safe denoisers). Left is an overview of a segment around a target spike. Right is a detail view of the spike.}
+    \label{fig:denoising}
 \end{figure}
-
-
-\subsection{Development analysis}
+\subsection{Exploratory/ Development analysis}
 The noise level of each signal was measured by its MAD. All denoisers reduced the noise significantly relative to the raw signal \ref{tab:denoising quality}, with dense achieving the lowest MAD of 0.559 and wavelet the highest MAD of 2.253. When comparing peak-to-peak amplitude across the 177 target spikes, wavelet and dense denoising reduce the spike amplitude significantly, retaining only about 32\% and \%18 of the raw spike amplitude, respectively. Convolutional denoising, on the other hand, preserved the spike, retaining 54\% while reducing noise significantly, which can also be seen in figure \ref{fig:denoising}. 
 \begin{table}[htbp]
     \centering
@@ -364,28 +363,92 @@ The noise level of each signal was measured by its MAD. All denoisers reduced th
     \caption{Denosing quality. Each denoiser reduces the noise level (MAD). The mean spike-trough shows that wavelet and dense denoising reduce it significantly, while convolutional autoencoder preserves it. The spike retention is the mean trough relative to the raw signal.}
     \label{tab:denoising quality}
 \end{table}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{figures/denoising_quality.png}
-    \caption{Effect of each denoiser on the signal. Left is an overview of a segment around a target spike. Right is a detail view of the spike.}
-    \label{fig:denoising}
-\end{figure}
-
-
 
 \section{The effect of denoising on detection}
-\subsection{Development analysis}
+\subsection{Held-out evaluation}
+This section tests whether denoising the signal improves spike detection. Detection was run on the raw signal and each denoised signal and compared. 
+On the held-out evaluation \ref{tab:denoising-detetcion-heldout}, denoising did not improve detection. None of the denoisers increased the recall relative to raw and the false positive to true positives ratio remained above 1 for every signal (1.6-3.5). Dense gave the worst detection F1 of 0.226 and FP/TP of 3.50.
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{lcccccccc}
+    \toprule
+    signal & Kept & TP & FP & FN & Precision & Recall & F1 & FP/TP \\
+    \midrule
+    Raw & 68 & 18 & 50 & 43 & 0.265 & 0.295 & 0.279 & 2.78 \\
+    Wavelet & 52 & 20 & 32 & 41 & 0.385 & 0.328 & 0.354 & 1.60 \\
+    Dense & 63 & 14 & 49 & 47 & 0.222 & 0.230 & 0.226 & 3.50 \\
+    Conv & 64 & 21 & 43 & 40 & 0.328 & 0.344 & 0.336 & 2.05 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Effect of denoising on detetcion (held-out evaluation). Detetcion was applied to the evaluation period on each signal. Denoising did not increase recall or reduce the FP/TP ratio; the FP/TP ratio remained above 1 for every signal.}
+    \label{tab:denoising-detetcion-heldout}
+\end{table}
+\subsection{Exploratory/ Development analysis}
 To test the effect of denoising on detection, the detection pipeline was run the same on the raw signal and each denoised signal, using the same parameters throughout. As seen \ref{}, denoising did not increase the number of true positives or the recall; both remained similar across all signals (TP ~110, recall ~0.61). The number of false positives has increased slightly with denoising, from 219 for raw to 234 for conv, which in turn reduced precision and F1 and raised the FP/TP ratio. This pattern was strongest for the denoisers that significantly lowered the noise level (dense and conv). 
 
 These additional detections were assessed using the standard spike sorting quality metrics\cite{hill_quality_2011}. When comparing the survivors across signals, approximately 82\% of denoised detections matched a raw detection within 2 ms, and the remaining 18\% were at new locations.
-These additional detections from the denoised signal were checked to determine whether they were real spikes or denoising artefacts. Their mean waveform in the raw signal showed a clear spike trough of -9.56, compared to the target spikes -11.856; they respected the refractory period, so there were no inter-spike intervals below 1 ms. Their peak-to-peak amplitudes were comparable to the target spikes (median 22.36 vs 23.91). This indicates that the additional detections are actual spikes rather than artefacts created by denoising. 
-\subsection{Held-out evaluation}
+These additional detections from the denoised signal were checked to determine whether they were real spikes or denoising artefacts. Their mean waveform in the raw signal showed a clear spike trough of -9.56, compared to the target spikes -11.856; they respected the refractory period, so there were no inter-spike intervals below 1 ms. Their peak-to-peak amplitudes were comparable to the target spikes (median 22.36 vs 23.91). This indicates that the additional detections are actual spikes rather than artefacts created by denoising. [To Do: I need to add a table for the leakage one as well]
+
 
 \section{Classification performance and the effect of denoising}
 \subsection{Held-out evaluation}
+The classifiers were trained on the development survivors and scored once on the held-out evaluation survivors, using 2$times$2 detection cutout ablation. Confidence intervals were computed by stratified bootstrap of the evaluation candidates. Because the evaluation set is small, these results are underpowered and are interpreted as consistent with chance, rather than as precise estimates.
+For one-class SVM, every ROC-AUC confidence interval included 0.5 across all arms and denoisers, except for wavelet hybrid B, which had an upper bound of 0.443 \ref{tab:classification-heldout}. 
+For two-class SVM, ten of the twelve arms had confidence intervals that included 0.5, except for the two arms from the dense denoiser; full denoised, ROC-AUC 0.71; Hybrid B, 0.71, where intervals excluded 0.5. 
+These two arms should not be interpreted as dense denoising helps. Because Dense had the fewest evaluation targets of only 14 and the lowest recall, giving the least stable estimate; and with 24 arms tested at 95\% confidence,
+No leakage was detected; the denoiser, template, scaler and parameters were verified as development only. Therefore, these arms are most consistent with sampling noise. 
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lllcc}
+    \toprule
+    Classifier & Denoiser & Arm & ROC-AUC [95\% CI] & PR-AP [95\% CI] (base) \\
+    \midrule
+    \multirow{12}{*}{One-class}
+     & \multirow{4}{*}{Wavelet}
+       & Full raw      & 0.403 [0.249, 0.564] & 0.296 [0.214, 0.491] (0.279) \\
+     & & Full denoised & 0.430 [0.273, 0.595] & 0.352 [0.299, 0.513] (0.385) \\
+     & & Hybrid A      & 0.512 [0.345, 0.669] & 0.401 [0.327, 0.585] (0.385) \\
+     & & Hybrid B*     & 0.294 [0.163, 0.443] & 0.251 [0.189, 0.379] (0.279) \\
+    \cmidrule{2-5}
+     & \multirow{4}{*}{Dense}
+       & Full raw      & 0.403 [0.249, 0.564] & 0.296 [0.214, 0.491] (0.279) \\
+     & & Full denoised & 0.599 [0.433, 0.765] & 0.307 [0.220, 0.528] (0.222) \\
+     & & Hybrid A      & 0.468 [0.273, 0.649] & 0.248 [0.176, 0.443] (0.222) \\
+     & & Hybrid B      & 0.473 [0.313, 0.641] & 0.306 [0.232, 0.502] (0.279) \\
+    \cmidrule{2-5}
+     & \multirow{4}{*}{Conv}
+       & Full raw      & 0.403 [0.249, 0.564] & 0.296 [0.214, 0.491] (0.279) \\
+     & & Full denoised & 0.505 [0.353, 0.650] & 0.347 [0.286, 0.491] (0.344) \\
+     & & Hybrid A      & 0.491 [0.343, 0.641] & 0.342 [0.284, 0.499] (0.344) \\
+     & & Hybrid B      & 0.483 [0.329, 0.640] & 0.304 [0.233, 0.497] (0.279) \\
+    \midrule
+    \multirow{12}{*}{Two-class}
+     & \multirow{4}{*}{Wavelet}
+       & Full raw      & 0.307 [0.173, 0.447] & 0.207 [0.189, 0.273] (0.279) \\
+     & & Full denoised & 0.570 [0.406, 0.731] & 0.509 [0.387, 0.715] (0.385) \\
+     & & Hybrid A      & 0.484 [0.323, 0.641] & 0.394 [0.310, 0.540] (0.385) \\
+     & & Hybrid B      & 0.472 [0.333, 0.613] & 0.262 [0.225, 0.375] (0.279) \\
+    \cmidrule{2-5}
+     & \multirow{4}{*}{Dense}
+       & Full raw      & 0.307 [0.173, 0.447] & 0.207 [0.189, 0.273] (0.279) \\
+     & & Full denoised* & 0.706 [0.538, 0.850] & 0.416 [0.282, 0.679] (0.222) \\
+     & & Hybrid A      & 0.481 [0.292, 0.663] & 0.266 [0.185, 0.487] (0.222) \\
+     & & Hybrid B*     & 0.728 [0.595, 0.851] & 0.509 [0.373, 0.736] (0.279) \\
+    \cmidrule{2-5}
+     & \multirow{4}{*}{Conv}
+       & Full raw      & 0.307 [0.173, 0.447] & 0.207 [0.189, 0.273] (0.279) \\
+     & & Full denoised & 0.412 [0.275, 0.553] & 0.339 [0.262, 0.476] (0.344) \\
+     & & Hybrid A      & 0.319 [0.193, 0.456] & 0.262 [0.238, 0.338] (0.344) \\
+     & & Hybrid B      & 0.505 [0.367, 0.647] & 0.276 [0.233, 0.390] (0.279) \\
+    \bottomrule
+    \end{tabular}
+    \caption{Held-out classification performance (2$\times$2 ablation, both classifiers, all denoisers). ROC-AUC and PR-AP are shown with 95\% stratified bootstrap confidence intervals; base is the evaluation base rate (the PR-AP chance level). Intervals excluding 0.5 are marked *. Three of 24 arms exclude 0.5 (two dense two-class arms above chance, one wavelet one-class arm below), consistent with sampling noise.}
+    \label{tab:classification-heldout}
+\end{table}
 
-
-\subsection{Development analysis}
+\subsection{Exploratory/ Development analysis}
 The survivors from detection were classified as target or non-target using two SVM classifiers, a one-class and a two-class SVM. Both were evaluated by 5-fold out-of-fold cross-validation with fixed hyperparameters and performance was evaluated by ROC-AUC, PR-AP, and F1, each with a 95\% bootstrap confidence interval.  
 For the one-class SVM, the ROC-AUC across all arms and denoisers remained close to 0.5, and every 95\% confidence interval included 0.5 \ref{tab:oneclass-cis}. This indicates that performance is indistinguishable from chance. 
 The two-class SVM showed a similar pattern to the one-class SVM; ROC-AUC also remained near 0.5 with every confidence interval including 0.5. Therefore, both classifiers were at chance across all conditions. 
