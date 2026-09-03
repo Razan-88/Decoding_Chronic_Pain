@@ -369,6 +369,33 @@ The key thing is that by the end of these first two or three chapters you have t
 
 \chapter{Execution}
 \label{chap:execution}
+This chapter describes the data and the methods used to detect, classify and denoise the target fibre's spikes in a single channel. It first introduces the recording and how the target unit was identified, then estimates the noise floor. It then describes the detection pipeline in three stages: building and matching a spike template, and constraining detections by their timing after the stimulus. It then describes the two classifiers used on the detection survivors: a one-class and two-class support vector machine. Finally describes three denoising methods: Wavelet, Dense Autoencoder and Convolutional Autoencoder to evaluate each method and to asses whether denoising improves detection or classification, and the metrics used throughout. 
+\section{The data: rat saphenous nerve microneurography}
+This project uses an extracellular microneurography recording from the peripheral nerve of a rat, sampled at 30 kHz over approximately 2.3 hours. The nerve carries many afferent fibres, so the electrode records the action potentials of many units at once, superimposed on background noise. Recordings were made using two multi-electrode sensor units placed at different positions along the nerve, each containing several
+channels corresponding to slightly different electrode locations. Eight channels carry manually labelled ground truth spikes (CH3, CH8, CH9, CH10, CH14, CH19, CH25, CH30). During the recording, an electrical stimulus (Pain stimulus) was delivered repeatedly, giving 2,310 stimulation pulses (TTL) at anormal rate of around 0.25 Hz. The target fibre responds to each stimulus by firing at an approximately fixed latency. The ground truth spike times were marked manually by a human annotator, who only
+labelled recognisable nerve responses; therefore, the annotations are conservative, and not every response is labelled. Each spike is marked at the point where the signal crosses zero on its descending slope. 
+\subsection{Target unit and channels}
+The lab identified a single target unit as a strong unit with large identifiable spikes on multiple channels. This project analyses five of these channels: 9, 14, 19, 25, and 30, with a strong signal, and each is analysed independently. 
+The spike latencies of the target unit were manually annotated on each channel; consequently, they are treated as reference annotations rather than complete ground truth, as they were manually identified and may contain errors. 
+Only a 15-minute window was used for analyses, beginning at the 900th stimulus pulse. 
+This window length was chosen because the target unit's latency remained stable; a longer window showed activity-dependent slowing that spreads the latency and prevents a fixed latency window from capturing the spikes. The signals were preprocessed by the recording laboratory, so it has been band-pass filtered 300-6000 Hz, common average referenced, and stimulus blanked. 
+\section{Noise estimation and preprocessing}
+As mentioned, no further filtering was applied in this project, because the recording given was already bandpass-filtered, with stimulation artefact blanked (set to zero). 
+The target units are small, only about two to three times the amplitude of the background noise; consequently, they do not stand out clearly and can not be isolated by amplitude threshold alone. Therefore, removing the noise, detecting and classifying the target unit's spikes are the central challenges this chapter tries to address. The noise level is estimated using the median absolute deviation (MAD) \cite{quiroga_unsupervised_2004, park_deep_2019}:
+\begin{equation}
+    \sigma_{\text{noise}} = \frac{\operatorname{median}(|x|)}{0.6745}
+\end{equation}
+where $x$ is the signal. The median is used instead of standard deviation because the spikes are infrequent, so the median does not inflate the estimate the way standard deviation would; dividing by 0.6745 rescales the value to be comparable to a standard deviation under an assumption of Gaussian noise \cite{drebitz_optimizing_2019}. MAD is an estimate, so it assumes the signal is mostly noise and approximately Gaussian \cite{coupe_robust_2010}. But because it is applied identically to every signal, it is a valid basis for comparison.
+\section{Leakage safe evaluation protocol}
+For unbiased performance, a chronological split was used on the recording by dividing the recording into a development set on the first 70\% [3602.7-4232.7 s] and a held-out evaluation on the last 30\% of the recording [4232.7-4502.7 s]. All hyperparameter tuning was conducted on the development set, and the evaluation set was scored once to prevent data leakage and to avoid overfitting \cite{rashid_spike_2025}. All component that could carry information across the split was fitted on the development set only; the spike template was built from target spikes in the development annotations split only; the autoencoders were trained on synthetic data derived from the development set. Detection parameters like shape similarity and latency window were selected by maximising F1 on the development set. The classifiers and the two-class classifier were fitted on the development survivors only with fixed hyperparameters and scored once on the evaluation survivors. The confidence intervals were computed by stratified bootstrap resampling of the evaluation candidates.  
+
+\section{Detection}
+\subsection{Template matching and spike detection}
+
+\section{Denoising methods}
+\section{Classification}
+\section{Evaluation metrics}
+\section{Multi-channel consistency}
 
 {\bf A topic-specific chapter, roughly 30\% of the total page-count}
 \vspace{1cm} 
@@ -389,67 +416,6 @@ is useful and/or informative in some way: for example, if there was a
 decision to be made then explain the trade-offs and implications 
 involved.
 
-\section{Example Section}
-
-This is an example section; 
-the following content is auto-generated dummy text.
-\lipsum
-
-\subsection{Example Sub-section}
-
-\begin{figure}[t]
-\centering
-foo
-\caption{This is an example figure.}
-\label{fig}
-\end{figure}
-
-\begin{table}[t]
-\centering
-\begin{tabular}{|cc|c|}
-\hline
-foo      & bar      & baz      \\
-\hline
-$0     $ & $0     $ & $0     $ \\
-$1     $ & $1     $ & $1     $ \\
-$\vdots$ & $\vdots$ & $\vdots$ \\
-$9     $ & $9     $ & $9     $ \\
-\hline
-\end{tabular}
-\caption{This is an example table.}
-\label{tab}
-\end{table}
-
-\begin{algorithm}[t]
-\For{$i=0$ {\bf upto} $n$}{
-  $t_i \leftarrow 0$\;
-}
-\caption{This is an example algorithm.}
-\label{alg}
-\end{algorithm}
-
-\begin{lstlisting}[float={t},caption={This is an example listing.},label={lst},language=C]
-for( i = 0; i < n; i++ ) {
-  t[ i ] = 0;
-}
-\end{lstlisting}
-
-This is an example sub-section;
-the following content is auto-generated dummy text.
-Notice the examples in Figure~\ref{fig}, Table~\ref{tab}, Algorithm~\ref{alg}
-and Listing~\ref{lst}.
-\lipsum
-
-\subsubsection{Example Sub-sub-section}
-
-This is an example sub-sub-section;
-the following content is auto-generated dummy text.
-\lipsum
-
-\paragraph{Example paragraph.}
-
-This is an example paragraph; note the trailing full-stop in the title,
-which is intended to ensure it does not run into the text.
 
 % -----------------------------------------------------------------------------
 
@@ -545,7 +511,7 @@ And this, the final paragraph of this thesis template, is just a bunch of citati
 
 \backmatter
 
-\bibliography{sample_bibtex.bib}
+\bibliography{references.bib}
 
 % -----------------------------------------------------------------------------
 
