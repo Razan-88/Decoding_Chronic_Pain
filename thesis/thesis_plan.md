@@ -55,3 +55,12 @@ Funnel: these are what I build on and compare to.
 . Denoiser quality metrics: SNR, template match consistency, MAD, spike depth and what each measures 
 **When writing chapter 3:** This chapter syas ""I did X and why"", every method I intreduce in chapter 2, gets its full details in this chaper (chapter 3), The order of writing this chapter should Match the pipeline: data, noie, detection, latency, classifier, denoising, metrics. 
 
+### limitation:
+The limitation:
+The method here uses a fixed latency window, which assumes the target fibre's latency is roughly constant. This holds over shorter recording windows (here, 15 minutes), where the latency stays tight. Over longer windows, the fibre fires more densely, and activity-dependent slowing (ADS) causes the latency to shift and spread (spread grow from ~8 ms at 20-25 min to ~52 ms at 30 min). A fixed latency window cannot capture this spread, so detection fails on longer windows.
+
+The future-work solution (latency tracking):
+The established solution in the microneurography literature is latency tracking, following the moving latency track rather than using a fixed window. Track-detection algorithms (e.g. Turnquist et al.'s track correlation; Troglio et al.'s activity-dependent latency-shift constraint) follow the ADS-driven latency changes over time. Implementing latency tracking would allow the method to extend to longer, more active recording periods (where the fibre fires densely and ADS is pronounced).
+Turnquist et al. (2016): "Automated detection of latency tracks in microneurography recordings using track correlation." (Track-following method.)
+Troglio et al. (2026): constrains detection to "intervals showing activity-dependent latency shifts." (ADS-aware detection.)
+Serra et al. (1999): the ADS phenomenon itself ("activity-dependent slowing of conduction").
