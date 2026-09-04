@@ -391,7 +391,7 @@ For unbiased performance, a chronological split was used on the recording by div
 
 \section{Detection}
 \subsection{Template matching and spike detection}
-
+The spike template was built by averaging the annotated unit's spikes on the development set, to prevent leakage in later stages. For each marked spike, a 90-sample window (45 samples on either side of the spike trough) is then extracted from the signal and then averaged to give the unit's mean waveform. 
 \section{Denoising methods}
 \section{Classification}
 \section{Evaluation metrics}
@@ -473,10 +473,76 @@ This suggests that MAD alone is not enough to determine denoising quality, becau
 \section{Template matching detection}
 This section compares detection before and after denoising, comparing the three denoisers across the five channels. 
 \subsection{Baseline detection}
- Detection was applied to the raw signal on each channel and scored against the reference annotations in the held-out evaluation period \ref{}, \ref{}. The false positive to true positives ratio (FP/TP across all channels exceeded 1, ranging from 2.75 to 4.73, and recall was low, around 0.18 to 0.27. Detection on the raw signal of every channel showed more false positives than true positives. This indicates that these false positives resemble the target spikes in both waveforms and latency window, as they passed both the shape similarity threshold and the latency window. These results are consistent with the literature. According to \cite{troglio_hybrid_2026, hill_quality_2011} in single-electrode microneurography analysis, waveform shapes are highly similar across fibres, and it is difficult to separate overlapping units on a single electrode. The TP/FP ratio here for the raw signal is around 2.75 to 4.73, which is lower than those reported by \cite{troglio_hybrid_2026} for multi-fibre recordings; the FP/TP is around 2 to 20. However, these studies did not denoise the signal; the next subsection evaluates whether denoising the signal would make spike detection by shape and latency any better. 
+ Detection was applied to the raw signal on each channel and scored against the reference annotations in the held-out evaluation period \ref{tab:Baseline detection}, \ref{}. The false positive to true positives ratio (FP/TP across all channels exceeded 1, ranging from 2.75 to 4.73, and recall was low, around 0.18 to 0.27. Detection on the raw signal of every channel showed more false positives than true positives. This indicates that these false positives resemble the target spikes in both waveforms and latency window, as they passed both the shape similarity threshold and the latency window. These results are consistent with the literature. According to \cite{troglio_hybrid_2026, hill_quality_2011} in single-electrode microneurography analysis, waveform shapes are highly similar across fibres, and it is difficult to separate overlapping units on a single electrode. The TP/FP ratio here for the raw signal is around 2.75 to 4.73, which is lower than those reported by \cite{troglio_hybrid_2026} for multi-fibre recordings; the FP/TP is around 2 to 20. However, these studies did not denoise the signal; the next subsection evaluates whether denoising the signal would make spike detection by shape and latency any better. 
+
+ \begin{table}[htbp]
+     \centering
+     \begin{tabular}{lcccccccc}
+     \toprule
+    Channel & Survivors & TP & FP  & FN & Precision & Recall & F1 & FP/TP \\
+    \midrule
+    9  & 61 & 12 & 49 & 50 & 0.197 & 0.194 & 0.195 & 4.08 \\
+    14 & 60 & 16 & 44 & 44 & 0.267 & 0.267 & 0.267 & 2.75 \\
+    19 & 63 & 11 & 52 & 50 & 0.175 & 0.180 & 0.177 & 4.73 \\
+    25 & 58 & 14 & 44 & 52 & 0.241 & 0.212 & 0.226 & 3.14 \\
+    30 & 62 & 13 & 49 & 48 & 0.210 & 0.213 & 0.211 & 3.77 \\
+    \bottomrule 
+     \end{tabular}
+     \caption{Per-channel baseline detection on raw signal on held-out evaluation. The false positives to true positive ratio (FP/TP exceeds 1 for every channel, with channel 19 the highest and channel 14 the lowest.}
+     \label{tab:Baseline detection}
+ \end{table}
 \subsection{Detection after denoising}
 Detection was then applied to each denoised signal from wavelet, dense and convolutional and compared to the raw baseline \ref{}, \ref{}. 
-Denoising did not reduce the 
+The effect of denoising on the FP/TP is inconsistent across channels, and no denoiser improved the FP/TP; the ratio remains above 1 for all denoisers and all channels. 
+Wavelet improved the ratio slightly on three channels (ch9, ch14, and ch19), and worsened the ratio on two channels (ch25 and ch30); dense also improved three (ch9, ch25, and ch30) and worsed the ratio on two channels (ch14, 19); convlutional improved 2 (ch9, ch19) and showed worse ratio on (ch14, ch25, ch30). Only channel 9: the three denoisers reduced FP/TP, although even there the ratio remained above 2.7.
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{llccccccc}
+    \toprule
+    Channel & Signal & Survivors & TP & FP & FN & Recall & F1 & FP/TP \\
+    \midrule
+    \multirow{4}{*}{9}  
+    & Raw & 61 & 12 & 49 & 50 & 0.194 & 0.195 & 4.08 \\
+    & Wavelet & 59 & 16 & 43 & 46 & 0.258 & 0.264 & 2.69 \\
+    & Dense & 60 & 15 & 45 & 47 & 0.242 & 0.246 & 3.00 \\
+    & Conv & 65 & 16 & 49 & 46 & 0.258 & 0.252 & 3.06 \\
+    \midrule
+    \multirow{4}{*}{14} 
+    & Raw & 60 & 16 & 44 & 44 & 0.267 & 0.267 & 2.75 \\
+    & Wavelet & 59 & 16 & 43 & 44 & 0.267 & 0.269 & 2.69 \\
+    & Dense & 55 & 10 & 45 & 50 & 0.167 & 0.174 & 4.50 \\
+    & Conv & 65 & 15 & 50 & 45 & 0.250 & 0.240 & 3.33 \\
+    \midrule
+    \multirow{4}{*}{19} 
+    & Raw & 63 & 11 & 52 & 50 & 0.180 & 0.177 & 4.73 \\
+    & Wavelet & 58 & 14 & 44 & 47 & 0.230 & 0.235 & 3.14 \\
+    & Dense & 64 & 8 & 56 & 53 & 0.131 & 0.128 & 7.00 \\
+    & Conv & 63 & 16 & 47 & 45 & 0.262 & 0.258 & 2.94 \\
+    \midrule
+    \multirow{4}{*}{25} 
+    & Raw & 58 & 14 & 44 & 52 & 0.212 & 0.226 & 3.14 \\
+    & Wavelet & 52 & 12 & 40 & 54 & 0.182 & 0.203 & 3.33 \\
+    & Dense & 61 & 21 & 40 & 45 & 0.318 & 0.331 & 1.90 \\
+    & Conv & 61 & 12 & 49 & 54 & 0.182 & 0.189 & 4.08 \\
+    \midrule
+    \multirow{4}{*}{30} 
+    & Raw & 62 & 13 & 49 & 48 & 0.213 & 0.211 & 3.77 \\
+    & Wavelet & 51 & 7 & 44 & 54 & 0.115 & 0.125 & 6.29 \\
+    & Dense & 65 & 14 & 51 & 47 & 0.230 & 0.222 & 3.64 \\
+    & Conv & 62 & 11 & 51 & 50 & 0.180 & 0.179 & 4.64 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Caption}
+    \label{tab:placeholder}
+\end{table}
+
+
+When comparing spike template matching detection before denoising to after denoising, none of the three denoisers reduced the FP/TP ratio to below 1 on any channel; even the largest improvement, which was dense on CH25, only improved it to 1.90 compared to the raw ratio of 3.14. The scattered pattern of improvement and worsening is quite balanced across the fifteen denoiser channel combinations. Several reasons and mechanisms reported in the literature for denoising increasing the number of false positives, and these fall into two categories. These false positives could be genuine biological spikes that were buried by the noise and were detected by the template matching after denoising, or artefacts introduced by the denoisers themselves.
+According to \cite{bengio_generalized_2013}, denoising autoencoders can learn to pull corrupted points back to the manifold via a learned vector field, so whenever the model receives unstructured noise, it could reshape that noise into the nearest pattern, which is in this case spikes. This could be the reason for the false positives that were more compared to raw. Furthermore, denoising can diminish the spikes' fine features that help distinguish them from neighbouring units \cite{baldazzi_systematic_2020}, which in turn causes non-target spikes to resample the target template. If the additional detections (false positives) by the denoisers are actual spikes, they should look like the spike's waveforms in the raw signal; and if they are artefacts, they should be absent or near flat in the raw signal since they were created. This check was only done on ch19 for the dense autoencoder, where the FP/TP ratio increased from 4.73 to 7.00 with 11 additional detections. These additional detections have a mean trough of -11.77 in the raw signal, similar to the target spikes, indicating that these extra false positives might be spike-like events rather than artefacts produced by the denoiser. However, this can not rule out any other possibilities, as only the mean trough spikes were checked and only on one channel with one denoiser. Nonetheless, in a single channel, spikes do overlap, have similar waveform shapes and latency, and without the spatial information that of multi-channel analysis, it is difficult to distinguish target spikes from non-target \cite{troglio_hybrid_2026}.  
+ 
+
+
 \section{Classification}
 \subsection{Baseline classification}
 \subsection{Classification after denoising}
