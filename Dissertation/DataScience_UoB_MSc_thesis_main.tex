@@ -372,8 +372,14 @@ The key thing is that by the end of these first two or three chapters you have t
 This chapter describes the data and the methods used to detect, classify and denoise the target fibre's spikes in a single channel. It first introduces the recording and how the target unit was identified, then estimates the noise floor. It then describes the detection pipeline in three stages: building and matching a spike template, and constraining detections by their timing after the stimulus. It then describes the two classifiers used on the detection survivors: a one-class and two-class support vector machine. Finally describes three denoising methods: Wavelet, Dense Autoencoder and Convolutional Autoencoder to evaluate each method and to asses whether denoising improves detection or classification, and the metrics used throughout. 
 \section{The data: rat saphenous nerve microneurography}
 This project uses an extracellular microneurography recording from the peripheral nerve of a rat, sampled at 30 kHz over approximately 2.3 hours. The nerve carries many afferent fibres, so the electrode records the action potentials of many units at once, superimposed on background noise. Recordings were made using two multi-electrode sensor units placed at different positions along the nerve, each containing several
-channels corresponding to slightly different electrode locations. Eight channels carry manually labelled ground truth spikes (CH3, CH8, CH9, CH10, CH14, CH19, CH25, CH30). During the recording, an electrical stimulus (Pain stimulus) was delivered repeatedly, giving 2,310 stimulation pulses (TTL) at anormal rate of around 0.25 Hz. The target fibre responds to each stimulus by firing at an approximately fixed latency. The ground truth spike times were marked manually by a human annotator, who only
+channels corresponding to slightly different electrode locations. Eight channels carry manually labelled ground truth spikes (CH3, CH8, CH9, CH10, CH14, CH19, CH25, CH30). During the recording, an electrical stimulus (Pain stimulus) was delivered repeatedly, giving 2,310 stimulation pulses (TTL) at a normal rate of around 0.25 Hz. The target fibre responds to each stimulus by firing at an approximately fixed latency. The ground truth spike times were marked manually by a human annotator \ref{fig:raw signal}, who only
 labelled recognisable nerve responses; therefore, the annotations are conservative, and not every response is labelled. Each spike is marked at the point where the signal crosses zero on its descending slope. 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/raw signal with target spikes in blue and stimuli dashed red.png}
+    \caption{Segment representing the raw signal of channel 19 with the manually annotated spikes in blue and the stimulus times in red. Each target spike follows a stimulus at a latency of around 100 ms.}
+    \label{fig:raw signal}
+\end{figure}
 \subsection{Target unit and channels}
 The lab identified a single target unit as a strong unit with large identifiable spikes on multiple channels. This project analyses five of these channels: 9, 14, 19, 25, and 30, with a strong signal, and each is analysed independently. 
 The spike latencies of the target unit were manually annotated on each channel; consequently, they are treated as reference annotations rather than complete ground truth, as they were manually identified and may contain errors. 
@@ -422,6 +428,22 @@ involved.
 \chapter{Critical Evaluation}
 \label{chap:evaluation}
 \section{Data and channels}
+The evaluation was performed on the five channels where the target unit has a strong signal (channels 9, 14, 19, 25, and 30). Each channel is analysed independently as a single-channel recording over 15 minutes window for consistency analysis. This table \ref{tab:channel data overview} shows how many target annotations were in each channel and how many were in the 15-minute window analysed; each channel was split chronologically into a development set used for all tuning and a held-out set that was scored once. The noise floor MAD is consistent between channels. 
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{lccccc}
+    Channel & Total annotations & Window annotations & Developemnt & Evaluation & MAD \\
+    \toprule
+    9 & 1628 & 170 & 108 & 62 & 4.80 \\
+    14 & 1639 & 173 & 113 & 60 & 4.88 \\
+    19 & 1623 & 177 & 116 & 61 & 4.96 \\
+    25 & 1777 & 186 & 120 & 66 & 4.63 \\
+    30 & 1414 & 174 & 133 & 61 & 4.82 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Overview of the five channels analysed for this project. The target unit appears with a strong signal on all channels. Each channel is analysed independently over a 15-minute window with a chronological split of 70\% development and 30\% evaluation. MAD is the raw noise level estimate for each channel.}
+    \label{tab:channel data overview}
+\end{table}
 \section{Denoising quality}
 The three denoisers were assessed across the five channels using two measures: MAD to assess each denoiser's noise reduction relative to the raw,  and the preservation of spike amplitude by using peak-to-peak amplitude relative to the raw signal. These measures were used instead of reconstructive error because no clean signal exists for these real recordings to compare against \cite{baldazzi_systematic_2020, adam_comparative_2025}
 All denoisers reduced the noise level, as seen in Table \ref{tab:denoising quality}. Dense reduces the noise the most to MDA ~0.50, and the wavelet denoiser the least to ~2.30 compared to raw ~ 4.80. Despite the Dense autoencoder achieving the lowest MAD, it only retained 17-20\% of the raw spike amplitude across channels, making it the most destructive. The convolutional autoencoder reduced the noise and preserved the spike amplitude, achieving 55-57\% \ref{tab:denoising quality} \ref{fig:denosiing quality ch19}. This pattern was consistent across the five channels. 
@@ -461,7 +483,7 @@ All denoisers reduced the noise level, as seen in Table \ref{tab:denoising quali
     \caption{Denoising quality across the five channels. Each denoiser reduces the noise floor (MAD) and preserves the spike amplitude peak-to-peak relative to raw. The dense autoencoder shows the lowest MAD and retains the least amplitude across all channels, while the convolutional autoencoder reduces the noise floor but preserves the most spike amplitude across all channels.}
     \label{tab:denoising quality}
 \end{table}
-\begin{figure}
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{figures/denoising_quality_leakage_safe.png}
     \caption{Effect of each denoiser on the signal on channel 19. Left is an overview of a segment around a target spike. Right is a detail view of the spike.}
@@ -491,7 +513,7 @@ This section compares detection before and after denoising, comparing the three 
      \caption{Per-channel baseline detection on raw signal on held-out evaluation. The false positives to true positive ratio (FP/TP exceeds 1 for every channel, with channel 19 the highest and channel 14 the lowest.}
      \label{tab:Baseline detection}
  \end{table}
-\begin{figure}
+\begin{figure}[H]
      \centering
      \includegraphics[width=\textwidth]{figures/Detection performamce befoer denoiisng (1).png}
      \caption{Baseline detection performance per channel on the raw signal. Spike detection performance using similarity thresholding and a latency window: TP, FP, and FN are visualised on a log scale for the raw signal across the five channels on the held-out evaluation period. All channels have higher false positives compared to the true positives, with Ch19 exhibiting the most false positives and the least true positives.}
@@ -542,7 +564,7 @@ Wavelet improved the ratio slightly on three channels (ch9, ch14, and ch19), and
     \caption{Per channel and signal detection after denoising on the held-out evaluation. Denoising did not reduce the FP/TP ratio; all are exceeding 1 on every channel, and it shows an inconsistent effect across channels.}
     \label{tab:detection denoised}
 \end{table}
-\begin{figure}
+\begin{figure}[htbp]
      \centering
      \includegraphics[width=\textwidth]{figures/Detection performamce after denoisng.png}
      \caption{Detection performance per channel before and after denoising the signal. The TP, FP, and FN are visualised on a log scale for the denoised signal across the five channels on the held-out evaluation period. Denoising does not consistently reduce the false positive count.}
