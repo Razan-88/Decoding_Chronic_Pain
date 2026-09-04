@@ -421,6 +421,65 @@ involved.
 
 \chapter{Critical Evaluation}
 \label{chap:evaluation}
+\section{Data and channels}
+\section{Denoising quality}
+The three denoisers were assessed across the five channels using two measures: MAD to assess each denoiser's noise reduction relative to the raw,  and the preservation of spike amplitude by using peak-to-peak amplitude relative to the raw signal. These measures were used instead of reconstructive error because no clean signal exists for these real recordings to compare against \cite{baldazzi_systematic_2020, adam_comparative_2025}
+All denoisers reduced the noise level, as seen in Table \ref{tab:denoising quality}. Dense reduces the noise the most to MDA ~0.50, and the wavelet denoiser the least to ~2.30 compared to raw ~ 4.80. Despite the Dense autoencoder achieving the lowest MAD, it only retained 17-20\% of the raw spike amplitude across channels, making it the most destructive. The convolutional autoencoder reduced the noise and preserved the spike amplitude, achieving 55-57\% \ref{tab:denoising quality} \ref{fig:denosiing quality ch19}. This pattern was consistent across the five channels. 
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{llccc}
+    \toprule
+    Channel & Signal & Peak-to-peak & Retained \\
+    \midrule
+    \multirow{4}{*}{9} & Raw & 4.80 & 22.99 & 100\% \\
+    & Wavelet & 2.23 & 7.36 & 31\% \\
+    & Dense & 0.48 & 4.47 & 19\% \\
+    & Conv & 1.08 & 13.13 & 55\% \\
+    \midrule
+\multirow{4}{*}{14} & Raw & 4.89 & 23.82 & 100\% \\
+    & Wavelet & 2.23 & 7.36 & 31\% \\
+    & Dense & 0.48 & 4.47 & 19\% \\
+    & Conv & 1.08 & 13.13 & 55\% \\
+\midrule
+\multirow{4}{*}{19} & Raw & 4.96 & 24.08 & 100\% \\
+    & Wavelet & 2.25 & 7.62 & 32\% \\
+    & Dense & 0.58 & 4.81 & 20\% \\
+    & Conv & 1.25 & 13.67 & 57\% \\
+\midrule
+\multirow{4}{*}{25} & Raw & 4.63 & 21.75 & 100\% \\
+    & Wavelet & 2.31 & 7.77 & 36\% \\
+    & Dense & 0.50 & 3.91 & 18\% \\
+    & Conv & 1.05 & 11.56 & 53\% \\
+\midrule
+\multirow{4}{*}{30} & Raw & 4.82 & 22.75 & 100\% \\
+    & Wavelet & 2.25 & 7.22 & 32\% \\
+    & Dense & 0.48 & 3.92 & 17\% \\
+    & Conv & 1.23 & 12.68 & 56\% \\
+    \bottomrule
+    \end{tabular}
+    \caption{Denoising quality across the five channels. Each denoiser reduces the noise floor (MAD) and preserves the spike amplitude peak-to-peak relative to raw. The dense autoencoder shows the lowest MAD and retains the least amplitude across all channels, while the convolutional autoencoder reduces the noise floor but preserves the most spike amplitude across all channels.}
+    \label{tab:denoising quality}
+\end{table}
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/denoising_quality_leakage_safe.png}
+    \caption{Effect of each denoiser on the signal on channel 19. Left is an overview of a segment around a target spike. Right is a detail view of the spike.}
+    \label{fig:denosiing quality ch19}
+\end{figure}
+
+This suggests that MAD alone is not enough to determine denoising quality, because a distorted spike carries less information for detection and classification. So, only focusing on noise removal ignores whether the spike morphology is preserved \cite{baldazzi_systematic_2020}. However, \cite{baldazzi_systematic_2020} used RMSE to quantify morphology preservation against a clean reference. Here, the recording is real and noisy with annotated ground truth, so peak-to-peak was measured following \cite{adam_comparative_2025}. The results for denoising quality are consistent across the five channels; the raw and convolutional spikes retain their depth, while the wavelet and dense did not. 
+
+\section{Template matching detection}
+This section compares detection before and after denoising, comparing the three denoisers across the five channels. 
+\subsection{Baseline detection}
+ Detection was applied to the raw signal on each channel and scored against the reference annotations in the held-out evaluation period \ref{}, \ref{}. The false positive to true positives ratio (FP/TP across all channels exceeded 1, ranging from 2.75 to 4.73, and recall was low, around 0.18 to 0.27. Detection on the raw signal of every channel showed more false positives than true positives. This indicates that these false positives resemble the target spikes in both waveforms and latency window, as they passed both the shape similarity threshold and the latency window. These results are consistent with the literature. According to \cite{troglio_hybrid_2026, hill_quality_2011} in single-electrode microneurography analysis, waveform shapes are highly similar across fibres, and it is difficult to separate overlapping units on a single electrode. The TP/FP ratio here for the raw signal is around 2.75 to 4.73, which is lower than those reported by \cite{troglio_hybrid_2026} for multi-fibre recordings; the FP/TP is around 2 to 20. However, these studies did not denoise the signal; the next subsection evaluates whether denoising the signal would make spike detection by shape and latency any better. 
+\subsection{Detection after denoising}
+Detection was then applied to each denoised signal from wavelet, dense and convolutional and compared to the raw baseline \ref{}, \ref{}. 
+Denoising did not reduce the 
+\section{Classification}
+\subsection{Baseline classification}
+\subsection{Classification after denoising}
 
 {\bf A topic-specific chapter, roughly 30\% of the total page-count} 
 \vspace{1cm} 
