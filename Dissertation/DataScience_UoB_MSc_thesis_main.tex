@@ -452,7 +452,7 @@ All denoisers reduced the noise level, as seen in Table \ref{tab:denoising quali
     \centering
     \begin{tabular}{llccc}
     \toprule
-    Channel & Signal & Peak-to-peak & Retained \\
+    Channel & Signal & MAD & Peak-to-peak & Retained \\
     \midrule
     \multirow{4}{*}{9} & Raw & 4.80 & 22.99 & 100\% \\
     & Wavelet & 2.23 & 7.36 & 31\% \\
@@ -571,10 +571,18 @@ Wavelet improved the ratio slightly on three channels (ch9, ch14, and ch19), and
      \label{fig:detection after denoising}
  \end{figure}
 
-When comparing spike template matching detection before denoising to after denoising, none of the three denoisers reduced the FP/TP ratio to below 1 on any channel; even the largest improvement, which was dense on CH25, only improved it to 1.90 compared to the raw ratio of 3.14. The scattered pattern of improvement and worsening is quite balanced across the fifteen denoiser channel combinations. Several reasons and mechanisms reported in the literature for denoising increasing the number of false positives, and these fall into two categories. These false positives could be genuine biological spikes that were buried by the noise and were detected by the template matching after denoising, or artefacts introduced by the denoisers themselves.
-According to \cite{bengio_generalized_2013}, denoising autoencoders can learn to pull corrupted points back to the manifold via a learned vector field, so whenever the model receives unstructured noise, it could reshape that noise into the nearest pattern, which is in this case spikes. This could be the reason for the false positives that were more compared to raw. Furthermore, denoising can diminish the spikes' fine features that help distinguish them from neighbouring units \cite{baldazzi_systematic_2020}, which in turn causes non-target spikes to resample the target template. If the additional detections (false positives) by the denoisers are actual spikes, they should look like the spike's waveforms in the raw signal; and if they are artefacts, they should be absent or near flat in the raw signal since they were created. This check was only done on ch19 for the dense autoencoder, where the FP/TP ratio increased from 4.73 to 7.00 with 11 additional detections. These additional detections have a mean trough of -11.77 in the raw signal, similar to the target spikes, indicating that these extra false positives might be spike-like events rather than artefacts produced by the denoiser. However, this can not rule out any other possibilities, as only the mean trough spikes were checked and only on one channel with one denoiser. Nonetheless, in a single channel, spikes do overlap, have similar waveform shapes and latency, and without the spatial information that of multi-channel analysis, it is difficult to distinguish target spikes from non-target \cite{troglio_hybrid_2026}.  
+When comparing spike template matching detection before denoising to after denoising, none of the three denoisers reduced the FP/TP ratio to below 1 on any channel; even the largest improvement, which was dense on CH25, only improved it to 1.90 compared to the raw ratio of 3.14. The scattered pattern of improvement and worsening is quite balanced across the fifteen denoiser channel combinations. 
+
+Channel-to-channel variation [TO DO]
+
+
+
+Several reasons and mechanisms reported in the literature for denoising increasing the number of false positives with some denoisers and some channels, and these fall into two categories. These false positives could be genuine biological spikes that were buried by the noise and were detected by the template matching after denoising, or artefacts introduced by the denoisers themselves.
+According to \cite{bengio_generalized_2013}, denoising autoencoders can learn to pull corrupted points back onto the manifold via a learned vector field, so when the model receives unstructured noise, it can reshape that noise into the nearest pattern, which, in this case, is spikes. This could be the reason for the higher number of false positives compared to raw. Furthermore, denoising can diminish the spikes' fine features that help distinguish them from neighbouring units \cite{baldazzi_systematic_2020}, which in turn causes non-target spikes to resample the target template. If the additional detections (false positives) by the denoisers are actual spikes, they should look like the spike's waveforms in the raw signal; and if they are artefacts, they should be absent or near flat in the raw signal since they were created. This check was only done on ch19 for the dense autoencoder, where the FP/TP ratio increased from 4.73 to 7.00 with 11 additional detections. These additional detections have a mean trough of -11.77 in the raw signal, similar to the target spikes, indicating that these extra false positives might be spike-like events rather than artefacts produced by the denoiser. However, this can not rule out any other possibilities, as only the mean trough spikes were checked and only on one channel with one denoiser. Nonetheless, in a single channel, spikes do overlap, have similar waveform shapes and latency, and without the spatial information that of multi-channel analysis, it is difficult to distinguish target spikes from non-target \cite{troglio_hybrid_2026}.  
 \section{Classification}
+
 \subsection{Baseline classification}
+The one-class and two-class SVMs were applied to the survivors from detection on the raw signal, trained on the development set and scored on the held-out evaluation set once \ref{} \ref{}. 
 \subsection{Classification after denoising}
 
 {\bf A topic-specific chapter, roughly 30\% of the total page-count} 
