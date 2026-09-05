@@ -582,8 +582,95 @@ According to \cite{bengio_generalized_2013}, denoising autoencoders can learn to
 \section{Classification}
 
 \subsection{Baseline classification}
-The one-class and two-class SVMs were applied to the survivors from detection on the raw signal, trained on the development set and scored on the held-out evaluation set once \ref{} \ref{}. 
+The one-class and two-class SVMs were applied to the survivors from detection on the raw signal, trained on the development set and scored on the held-out evaluation set once.  Both the table and the figure \ref{tab:classification baseline} \ref{fig:classification_baseline} show the ROC-AUC with 95\% confidence interval included 0.5. For one class svm the ROC-AUC for all channels ranged from 0.455 to 0.602, while the two-class SVM ranged from 0.399 to 0.606, and all confidence intervals included 0.5. The confusion matrix counts \ref{tab:classification baseline confusion metrics} show that for every channel, the false positives are more than true positives and the precision is between 0.15 and 0.30. 
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+    \toprule
+    Channel &  One-class ROC-AUC [95\% CI] & Two-class ROC-AUC [95\% CI] \\
+    \midrule
+    9 & 0.602 [0.446, 0.755] & 0.481 [0.299, 0.658] \\
+    14 & 0.477 [0.303, 0.651] & 0.506 [0.347, 0.666] \\
+    19 & 0.455 [0.264, 0.652] & 0.502 [0.283, 0.719] \\
+    25 & 0.539 [0.370, 0.711] & 0.399 [0.237, 0.571] \\
+    30 & 0.523 [0.356, 0.684] & 0.606 [0.411, 0.780] \\
+    \bottomrule
+    \end{tabular}
+    \caption{Per-channel baseline classification performance on the raw signal. All ROC-AUC confidence intervals are wide, but all include 0.5, indicating that the model's performance on the raw signal is indistinguishable from chance.}
+    \label{tab:classification baseline}
+\end{table}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{llccccccc}
+    Classifier & Channel & TP & FP & TN & Precision & Recall & F1 \\
+    \midrule
+    \multirow{5}{*}{One-class}
+    & 9  & 6  & 19 & 6 & 30 & 0.240 & 0.500 & 0.324 \\
+    & 14 & 10 & 28 & 6 & 16 & 0.263 & 0.625 & 0.370 \\
+    & 19 & 6  & 30 & 5 & 22 & 0.167 & 0.545 & 0.255 \\
+    & 25 & 8  & 19 & 6 & 25 & 0.296 & 0.571 & 0.390 \\
+     & 30 & 8  & 28 & 5 & 21 & 0.222 & 0.615 & 0.327 \\
+    \midrule
+    \multirow{5}{*}{Two-class}
+     & 9  & 7  & 28 & 5 & 21 & 0.200 & 0.583 & 0.298 \\
+     & 14 & 12 & 33 & 4 & 11 & 0.267 & 0.750 & 0.393 \\
+     & 19 & 6  & 33 & 5 & 19 & 0.154 & 0.545 & 0.240 \\
+     & 25 & 7  & 26 & 7 & 18 & 0.212 & 0.500 & 0.298 \\
+     & 30 & 8  & 22 & 5 & 27 & 0.267 & 0.615 & 0.372 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Per-channel confusion matrix counts of baseline classification. The true positives and precision scores exceed true positives.}
+    \label{tab:classification baseline confusion metrics}
+\end{table}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/classification_baseline.png}
+    \caption{Dot plot showing per-channel ROC-AUC scores for baseline classification on raw signal. The ROC-AUC is shown with 95\% bootstrap confidence intervals for one class on the left side and two classes on the right side. Every interval includes the chance level of 0.5 where the red dashed line.}
+    \label{fig:classification_baseline}
+\end{figure}
 \subsection{Classification after denoising}
+On denoised signals, \ref{tab:classificatio-roc denoised}, \ref{fig:classification roc after denoising}, the one-class SVM ROC-AUC ranged from 0.370 to 0.675 across all channels and denoisers. For two-class SVM, the ROC-AUC
+\begin{table}[H]
+    \centering
+    \begin{tabular}{llcc}
+    \toprule
+    Channel & Denoiser & One-class ROC-AUC [95\% CI] & Two-class ROC-AUC [95\% CI] \\
+    \midrule
+    \multirow{3}{*}{9}  
+    & Wavelet & 0.541 [0.366, 0.711] & 0.509 [0.331, 0.676] \\
+    & Dense & 0.536 [0.370, 0.702] & 0.527 [0.351, 0.704] \\
+    & Conv & 0.537 [0.363, 0.703] & 0.509 [0.356, 0.672] \\
+    \midrule
+    \multirow{3}{*}{14} 
+    & Wavelet & 0.461 [0.305, 0.625] & 0.491 [0.308, 0.673] \\
+    & Dense & 0.589 [0.411, 0.764] & 0.613 [0.387, 0.822] \\
+    & Conv & 0.517 [0.367, 0.680] & 0.585 [0.419, 0.740] \\
+    \midrule
+    \multirow{3}{*}{19} 
+    & Wavelet & 0.435 [0.258, 0.612] & 0.484 [0.292, 0.680] \\
+    & Dense & 0.438 [0.239, 0.623] & 0.531 [0.310, 0.757] \\
+    & Conv & 0.370 [0.215, 0.522] & 0.387 [0.243, 0.542] \\
+    \midrule
+    \multirow{3}{*}{25} 
+    & Wavelet & 0.552 [0.371, 0.727] & 0.348 [0.192, 0.521] \\
+    & Dense & 0.576 [0.421, 0.720] & 0.380 [0.240, 0.523] \\
+    & Conv & 0.580 [0.427, 0.735] & 0.587 [0.422, 0.747] \\
+    \midrule
+    \multirow{3}{*}{30} 
+    & Wavelet & 0.675 [0.409, 0.896] & 0.344 [0.133, 0.578] \\
+    & Dense & 0.598 [0.420, 0.758] & 0.410 [0.267, 0.564] \\
+    & Conv & 0.649 [0.483, 0.791] & 0.613 [0.415, 0.795] \\
+    \bottomrule
+    \end{tabular}
+    \caption {Per-channel classification performance on denoised signal. The ROC-AUC confidence interval is wide, but all include 0.5; denoised signal does not improve classification to above chance.}
+    \label{tab:classificatio-roc denoised}
+\end{table}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/classification after denoising.png}
+    \caption{Per-channel and denoiser (wavelet, dense, and convolutional autoencoders) ROC-AUC score for classification performance on denoised signal.The ROC-AUC is shown with 95\% bootstrap confidence intervals for one class on the left side and two classes on the right side. Denoising did not raise performance above chance; every interval includes the chance level of 0.5, where the red dashed line}
+    \label{fig:classification roc after denoising}
+\end{figure}
 
 {\bf A topic-specific chapter, roughly 30\% of the total page-count} 
 \vspace{1cm} 
