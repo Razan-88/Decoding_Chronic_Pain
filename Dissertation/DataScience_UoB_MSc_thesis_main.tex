@@ -289,81 +289,33 @@ Dave Cliff writes here to say huge thanks to his colleague Dr Dan Page for shari
 
 % -----------------------------------------------------------------------------
 
-\chapter{Introduction}
+\chapter{Introduction: Contextual Background}
 \label{chap:introduction}
+Chronic pain is a common and complex condition that persists for longer than three months, affecting 30-33\% of the population worldwide and 1 in 3 adults in the UK \cite{shetty_chronic_2025}. A meta-analysis of 19 populations by \cite{fayaz_prevalence_2016} showed that 43.5\% of the UK population (28 million adults) experience chronic pain and 14.3\% (8 million adults) live with moderate or severe disabling chronic pain. Due to the ageing population in England, chronic pain is estimated to grow by 1.7 million by 2024 \cite{toby_watt_health_2023}. Patients with chronic pain can also experience impacts on their quality of life, daily living activities, and psychological well-being \cite{andersen_psychosocial_2014}. The treatment for chronic pain is limited because the underlying cause of this condition is unknown. The standard treatments for acute pain are opioids, but they are not considered safe for long term use for chronic pain due to the shifts in the physiology of the nociceptors. 
+Chronic pain is caused by injury or disease in the nervous system and is associated with persistent hyperactivity of nociceptors, which are specialised to detect damaging stimuli and/or inflammation in rodents or humans \cite{walters_persistent_2023}. Therefore, a constant activation of these nociceptors, especially the C-fibre nociceptor, is a driver of prolonged pain and can lead to maladaptive neuroplasticity. Therefore, measuring the abnormal activities of these nociceptors could reveal and allow for precise pain targeting \cite{ossipov_central_2010}. These nociceptor activities can be recorded using microneurography, a technique where an electrode is inserted through the skin into a nerve bundle to record action potentials from a single fibre of interest. However, the spike patterns of these C-fibre nociceptors in the microneurography recordings are challenging because of the small spike amplitude, low signal-to-noise ratio, the conduction velocity and activity dependence, and their waveform shapes are similar between different fibres \cite{troglio_hybrid_2026}. Comprehensive spike detection and sorting analysis are therefore required. Many studies have researched and developed methods for extracellular spike detection and sorting for multi-electrode data, but not many focus on single electrodes where the spatial information is absent, and the discharge rates of unmyelinated peripheral nerve fibres are lower. 
 
-{\bf A compulsory chapter, roughly 10\% of the total page-count}
-\vspace{1cm} 
+\section{Structure}
 
-% putting a \noindent before the first para in each chapter looks nicer.
-\noindent
-This chapter should describe the project context, and motivate each of
-the proposed aims and objectives.  Ideally, it is written at a fairly 
-high-level, and easily understood by a reader who is technically 
-competent but not an expert in the topic itself.
 
-In short, the goal is to answer three questions for the reader.  First, 
-what is the project topic, or problem being investigated?  Second, why 
-is the topic important, or rather why should the reader care about it?  
-For example, why there is a need for this project, who will benefit from the 
-project and in what way (e.g., clients/end-users who needed some analysis
-done, or other data scientists who might need the tools you have developed), what 
-work does the project build on and why is the selected approach either
-important and/or interesting (e.g., fills a gap in literature, applies
-results from another field to a new problem).  Finally, what are the 
-central challenges involved and why are they significant? 
- 
-The chapter should conclude with a concise bullet point list that 
-summarises the aims, objectives, {\bf and achievements}\/ of your work. 
 
 % -----------------------------------------------------------------------------
 
-\chapter{Background}
+\chapter{Technical Background}
 \label{chap:background}
-
-{\bf A compulsory chapter, roughly 20\% of the total page-count}
-\vspace{1cm} 
-
-\noindent
-This chapter is intended to describe the technical basis on which execution
-of the project depends.  The goal is to provide a detailed explanation of
-the specific problem at hand, and existing work that is relevant such as an
-existing algorithm that you use, alternative solutions proposed, supporting
-technologies, and relevant literature. The literature you include should cover 
-appropriate peer-reviewed academic publications and books, and maybe also 
-news and current-affairs articles published in reputable sources such as 
-{\em The Economist} magazine or {\em The Financial Times} newspaper. 
-
-Your thesis should include complete set of references/bibliography: everything that you cite should be in there, in full. This means including the publisher's name for anything that is a book; the editors and title of books that a paper appears in as one item in a larger collection (e.g. proceedings volumes and/or thematic edited collections) and the relevant page-numbers; and so on. Put most simply, we require and expect your references to look like the references in a published peer-reviewed academic paper, so you can work out whether you still have work to do by comparing your references to the reference-list on the publications that you're working from. 
-
-Note there is a subtle difference from
-this and a full-blown literature {\em survey}.  The latter might try
-to capture and organise (e.g., categorise somehow) {\em all}\/ related work,
-potentially offering meta-analysis, whereas here the goal is simply to
-ensure that your thesis is self-contained.  Put another way, after reading 
-this chapter an intelligent non-expert reader with no prior knowledge of your project should have obtained enough background to 
-understand what {\em you}\/ have done (by reading subsequent sections), and then 
-accurately assess your work.  You might view an additional goal as giving 
-the reader confidence that you are able to absorb, understand and clearly 
-communicate highly technical material.
-
-Just as there is no single ideal structure for an MSc thesis, there is no one correct name for this chapter. You could just call it {\em Background}\/ if you wish, or {\em Technical Background}. Or if you feel you have a lot to say you could split this chapter into two: you might have your first three chapters being:
-\begin{enumerate}
-\item Introduction
-\item Context
-\item Related Work
-\end{enumerate}
-\noindent
-But if you prefer to use a more concise structure, you could instead use:
-\begin{enumerate}
-\item Introduction: Contextual Background
-\item Technical Background
-\end{enumerate}
-\noindent
-The choice is yours. 
-
-
-The key thing is that by the end of these first two or three chapters you have told the reader everything they need to know so that they can understand the rest of your thesis. This is particularly important because at least one of the people who actually examines your thesis will be a UoB academic, one of our lecturers or professors, who you can assume knows almost nothing about the specifics of what work you have done, and who is given a copy of your thesis to mark. So what you write has to adequately explain things to that examiner. You can safely assume that whoever examines your thesis is numerate, intelligent, understands programming and data analytics etc, but you cannot safely assume that their specific individual expertise is a perfect match to the topic of your thesis (it's in that sense that the examiner is a {\em non-expert}). So, the person you write for, your {\em audience}, should be that undefined group of academics who might possibly examine your thesis: if you write for that audience and do a good job, your thesis should be understandable by a wide range of people, including potential employers and colleagues in the world of work.
+\section{Extracellular Recordings}
+\label{sec:extracellular}
+\section{Extracellular spike detection}
+\label{sec:detection}
+\section{Spike sorting and classification}
+\label{sec:sorting}
+\section{Noise and signal quality of extracellular recordings}
+\label{sec:noise}
+\section{Signal preprocessing and denoising}
+\label{sec:denoising}
+\subsection{Wavelet-based denoising}
+\subsection{Deep learning-based denoising}
+\section{Research gap}
+\label{sec:research_gap}
 
 % -----------------------------------------------------------------------------
 
@@ -671,13 +623,16 @@ On denoised signals, no consistent improvement in classification performance was
     \caption{Per-channel and denoiser (wavelet, dense, and convolutional autoencoders) ROC-AUC score for classification performance on denoised signal.The ROC-AUC is shown with 95\% bootstrap confidence intervals for one class on the left side and two classes on the right side. Denoising did not raise performance above chance; every interval includes the chance level of 0.5, where the red dashed line}
     \label{fig:classification roc after denoising}
 \end{figure}
-Across all denoisers and channels, the confidence intervals are wide, spanning from 0.2 to 0.8. These intervals were computed by stratified bootstrap resampling, so this width is not a result of shifting class balance between resamples. However, two factors account for this wide interval: first, the small evaluation set, which was around 60 survivors per channel, of which only around 14 to 22 are target, limiting the statistical power and widening the intervals. The second factor is that the target and non-target waveforms overlap
-
-
+Across all denoisers and channels, the confidence intervals are wide, spanning from 0.2 to 0.8. These intervals were computed using stratified bootstrap resampling, so this width is not due to shifting class balance across resamples. However, two factors account for this wide interval: first, the small evaluation set, which was around 60 survivors per channel, of which only around 14 to 22 are target, limiting the statistical power and widening the intervals. The second factor is that the target and non-target waveforms overlap, making it difficult for the classifier to separate them even on a denoised signal, because non-target events appear to have a spike shape similar to the target \cite{troglio_hybrid_2026, hill_quality_2011}. The confusion matrix \ref{tab:confusion} supports this; the classifier accepts non-target survivors as targets, returning precision [0.13 to 0.40]; false positives exceed true positives, which confirms that classification is not discriminating between target spike and non-target spike and that this is consistent between channels. 
+These results suggest that the raw waveform features and the SVM tested here are unable to separate target units from non-target spikes on a single channel. This is a negative finding, suggesting that waveform shape alone can not resolve this contamination. Denoising the signal does not change this conclusion. Although some point estimates differ slightly, none of these differences seems meaningful. For example, the two-class ROC-AUC for the conv denoiser reached 0.61 on ch14 and 30; their confidence intervals still include 0.5 (0.42-0.82) and (0.42-0.80); does not indicate above-chance performance. Similarly, the channel-to-channel variation observed is expected because of the small evaluation set, resulting in ROC-AUC estimates that are quite uncertain, so a difference such as 0.44 vs 0.68 could just be sampling variability rather than evidence that some channels provide better class separation. Furthermore, because multiple channels, denoising and classification conditions are being evaluated, some ROC-AUC may rise due to sampling variability and should therefore be interpreted with caution \cite{sullivan_facts_2021}. 
+\section{Results Summary}
 
 % -----------------------------------------------------------------------------
 
+\section{Limitations}
+Several limitations must be considered when interpreting the results. 
 \chapter{Conclusion}
+\section{Future work}
 \label{chap:conclusion}
 
 {\bf A compulsory chapter,  roughly 10\% of the total page-count}
