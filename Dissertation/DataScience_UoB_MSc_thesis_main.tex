@@ -443,9 +443,9 @@ All denoisers reduced the noise level, as seen in Table \ref{tab:denoising quali
     \caption{Denoising quality across the five channels. Each denoiser reduces the noise floor (MAD) and preserves the spike amplitude peak-to-peak relative to raw. The dense autoencoder shows the lowest MAD and retains the least amplitude across all channels, while the convolutional autoencoder reduces the noise floor but preserves the most spike amplitude across all channels.}
     \label{tab:denoising quality}
 \end{table}
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{figures/denoising_quality_leakage_safe.png}
+    \includegraphics[width=1.1\textwidth]{figures/denoising_quality_leakage_safe.png}
     \caption{Effect of each denoiser on the signal on channel 19. Left is an overview of a segment around a target spike. Right is a detail view of the spike.}
     \label{fig:denosiing quality ch19}
 \end{figure}
@@ -633,8 +633,32 @@ On denoised signals, no consistent improvement in classification performance was
 \end{figure}
 Across all denoisers and channels, the confidence intervals are wide, spanning from 0.2 to 0.8. These intervals were computed using stratified bootstrap resampling, so this width is not due to shifting class balance across resamples. However, two factors account for this wide interval: first, the small evaluation set, which was around 60 survivors per channel, of which only around 14 to 22 are target, limiting the statistical power and widening the intervals. The second factor is that the target and non-target waveforms overlap, making it difficult for the classifier to separate them even on a denoised signal, because non-target events appear to have a spike shape similar to the target \cite{troglio_hybrid_2026, hill_quality_2011}. The confusion matrix \ref{tab:confusion} supports this; the classifier accepts non-target survivors as targets, returning precision [0.13 to 0.40]; false positives exceed true positives, which confirms that classification is not discriminating between target spike and non-target spike and that this is consistent between channels. 
 These results suggest that the raw waveform features and the SVM tested here are unable to separate target units from non-target spikes on a single channel. This is a negative finding, suggesting that waveform shape alone can not resolve this contamination. Denoising the signal does not change this conclusion. Although some point estimates differ slightly, none of these differences seems meaningful. For example, the two-class ROC-AUC for the conv denoiser reached 0.61 on ch14 and 30; their confidence intervals still include 0.5 (0.42-0.82) and (0.42-0.80); does not indicate above-chance performance. Similarly, the channel-to-channel variation observed is expected because of the small evaluation set, resulting in ROC-AUC estimates that are quite uncertain, so a difference such as 0.44 vs 0.68 could just be sampling variability rather than evidence that some channels provide better class separation. Furthermore, because multiple channels, denoising and classification conditions are being evaluated, some ROC-AUC may rise due to sampling variability and should therefore be interpreted with caution \cite{sullivan_facts_2021}. 
-\section{Results Summary}
+\section{Summary of the results}
+The overall detection performance showed 
+The overall performance of classification across the five channels showed that denoising does not produce consistent improvement in classification performance \ref{tab:Summary}. Dense denoising for one-class classification shows the highest mean ROC-AUC (0.547 $\pm$ 0.059), compared with 0.518 $\pm$ 0.051 for the raw condition. In contrast, for two-class SVM, the conv denoising showed the highest mean ROC-AUC (0.536 $\pm$ 0.082), compared to 0.499 $\pm$ 0.066 for the raw condition, and Wavelet showed lower mean ROC-AUC (0.435 $\pm$ 0.073). However, the effect of denoising on classification differed between channels and denoisers \ref{fig:classification heatmap}. For example, one-class ROC-ayc on channel 30 increased from 0.52 in the raw condition to 0.68 with wavelet-denoised signal and 0.65 with conv. Whereas the ROC-AUC on channel 19 decreased to 0.37 with cnov denoising. Similarly, for two-class SVM, conv increased ROC-AUC on channel 25 from 0.40 to 0.59, and reduced to 0.35 with wavelet. 
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{lccc}
+    \toprule
+    Condition & One-class ROC-AUC & Two-class ROC-AUC & Detection FP/TP \\
+    \midrule
+    Baseline (raw) & 0.518 $\pm$ 0.051 & 0.499 $\pm$ 0.066 & 3.69 $\pm$ 0.70 \\
+    Wavelet & 0.533 $\pm$ 0.084 & 0.435 $\pm$ 0.073 & 3.63 $\pm$ 1.35 \\
+    Dense & 0.547 $\pm$ 0.059 & 0.492 $\pm$ 0.086 & 4.01 $\pm$ 1.72 \\
+    Conv & 0.531 $\pm$ 0.092 & 0.536 $\pm$ 0.082 & 3.61 $\pm$ 0.65 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Summary table of mean $\pm$ standard deviation (SD) of one-class and two-class SVM ROC-AUC and detection FP/TP ratio across the five channels for each condition.}
+    \label{tab:Summary}
+\end{table}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.75\textwidth]{figures/classification_heatmap.png}
+    \caption{Classification ROC-AUC across five channels and all conditions (one-class and two-class SVM, before and after denoising). Values of 0.5 are chance-level discrimination. The heatmap displays point estimates only; the associated 95\% confidence intervals are reported in Table \ref{tab:classificatio-roc denoised} }
+    \label{fig:classification heatmap}
+\end{figure}
 
+ 
 % -----------------------------------------------------------------------------
 
 \section{Limitations}
