@@ -278,11 +278,16 @@ Extracellular recordings monitor the activity of single or multiple neurons by p
 4. Compare sorting methods (clustering vs supervised, and when each of them fails)
 5. The single-channel challenge (overlapping spikes, similar waveforms and latency.
 6. Troglio's hybrid approach, latency constraints, ADS
-7. what's solven and what remains a challenge 
+7. What's solved and what remains a challenge 
 \label{sec:detection}
-Most neural activity analysis pipelines begin with spike detection to identify when an action potential occurred. Spike detection is an important step as the quality of the algorithm influences the performance of the next steps, such as spike sorting and classification, so any errors in detection of the numbers and location of the target spikes would inevitably propagate through all the later analyses in the analysis \cite{azami_extracellular_2015}. Multiple reasons can make spike detection difficult; the recorded spikes are corrupted by non-target neurons' activities, background noise and recording hardware noise. Moreover, the activities of nearby neurons in the recording may merge as noise that correlates with the target signal \cite{azami_extracellular_2015}.  
+Because these recordings record the activity of several sources, spike sorting is essential to detect the action potentials and assign each to its unit before any firing patterns analysis \cite{rey_past_2015}. Therefore, spike sorting is divided into two stages: detection, which is identifying when a spike occurs, and sorting or classification, which is determining which unit produced it.  
 
-The standard spike detection involves setting a fixed voltage threshold, classifying any crossings as candidate spikes and extracting a short segment of the recorded voltage around these events for subsequent spike detection, which then can be extracted for waveform analysis, classification or spike sorting \cite{laboy-juarez_normalized_2019}. For a single spike not to be counted more than once as a separate event, a refractory period or a shadow period is enforced between the detected spike and the next spike \cite{laboy-juarez_normalized_2019}. 
+Most spike sorting analysis pipelines follow a common sequence \cite{rey_past_2015}: starting with band-pass filtering to isolate the spike frequency band; the spikes are then detected, usually by amplitude thresholding; then a waveform is extracted around each spike; and then features are computed for dimensionality reduction, for example by using principal component analysis (PCA) \cite{quiroga_unsupervised_2004}; and then the spikes are clustered in this feature space, where each cluster corresponds to a putative unit. However, the feature-based spike sorting pipeline is based on the assumption that spikes from different units form distinctive clusters in the chosen feature space \cite{lewicki_review_1998}. This assumption could be true when the units have distinct waveform shapes, such as spikes from different spatial positions captured by multiple electrodes, yielding a distinct multi-channel signature \cite{harris_accuracy_2000}. Therefore, modern automated sorters like WaveClus \cite{quiroga_unsupervised_2004} and Kilosort and MountainSort produce sufficient separation. However, this assumption of cluster separation fails when waveforms are similar between units, such as those in single-channel recordings, which is discussed in the following section. 
+
+Spike detection is an important step, as the quality of the algorithm influences the performance of the next steps, such as spike sorting and classification, so any errors in detection of the numbers and location of the target spikes would inevitably propagate through all the later analyses in the analysis \cite{azami_extracellular_2015}. Multiple reasons can make spike detection difficult; the recorded spikes are corrupted by non-target neurons' activities, background noise and recording hardware noise. Moreover, the activities of nearby neurons in the recording may merge as noise that correlates with the target signal \cite{azami_extracellular_2015}.  
+
+Single-channel lacks this spatial information, so algorithms rely mostly on temporal voltage dynamics such as waveform amplitude, shape, latency, and frequency content. 
+This involves setting a fixed voltage threshold, classifying any crossings as candidate spikes and extracting a short segment of the recorded voltage around these events for subsequent spike detection, which then can be extracted for waveform analysis, classification or spike sorting \cite{laboy-juarez_normalized_2019}. For a single spike not to be counted more than once as a separate event, a refractory period or a shadow period is enforced between the detected spike and the next spike \cite{laboy-juarez_normalized_2019}. 
 A fixed-amplitude threshold detection is simple and commonly used, but its performance depends on the user's selected threshold, so a threshold that is too high can cause low-amplitude spikes to be undetected, which can cause a single unit to be missed. If a threshold is too low, it can allow the detection of noise and non-sortable activities, which would increase the fraction of time spent in the refractory period, and, in turn, reduce detection for larger spikes \cite{laboy-juarez_normalized_2019}. 
 Thus, the selected threshold influences the detected events and later spike classification and sorting stages. These limitations are relevant when signal amplitude varies.  
 
@@ -295,6 +300,19 @@ The critical analysis:
 4. The open question: does denoising help downstream detection and sorting or just clean the signal? 
 5. Critically, denoising is often applied uncritically; its downstream benefit for Microneurography is unclear. 
 \label{sec:denoising}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \section{Research gap}
 1. Single-channel contamination is known and unresolved (Troglio, Hill). 
