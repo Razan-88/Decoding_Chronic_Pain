@@ -263,14 +263,11 @@ Chronic pain is caused by injury or disease in the nervous system and is associa
 
 \chapter{Technical Background}
 \label{chap:background}
-\section{Extracellular Recordings}
-Questions to answer:
-1. what is extracellular recording and what they capture (voltage, nearby neurons)
-2. Key problem with a single electrode captures multiple fibres
-3. Microneurography, C-fibre, low SNR, stimulus-evoked responses
-4. The fundamental limitation: one electrode, many fibres, similar waveforms. 
+\section{Extracellular Recordings} 
 \label{sec:extracellular}
-Extracellular recordings monitor the activity of single or multiple neurons by placing electrodes to measure action potentials from sensory fibres, and it is commonly used to investigate nociceptive activity \cite{kechris_removing_2021, guo_extracellular_2020}. When investigating pain, electrophysiological recordings of peripheral sensory activity can measure abnormal excitability and activity of nociceptor fibres which appear to drive pain in people with chronic pain \cite{themistocleous_defining_2026}. However, identifying these events in such recordings is challenging, especially in a single electrode, because the recorded signal contains multiple action potentials from different fibres with similar characteristics and background noise \cite{troglio_hybrid_2026, lecoq_removing_2021, kechris_removing_2021}. A similar issue is reported in human microneurography, where automated spike sorting is challenging because a single recording site can capture activity from multiple C-fibres \cite{troglio_action_2024}. 
+Extracellular recordings monitor the activity of single or multiple neurons by placing electrodes to measure action potentials from sensory fibres, and it is commonly used to investigate nociceptive activity \cite{kechris_removing_2021, guo_extracellular_2020}. 
+
+When investigating pain, electrophysiological recordings of peripheral sensory activity can measure abnormal excitability and activity of nociceptor fibres which appear to drive pain in people with chronic pain \cite{themistocleous_defining_2026}. However, identifying these events in such recordings is challenging, especially in a single electrode, because the recorded signal contains multiple action potentials from different fibres with similar characteristics and background noise \cite{troglio_hybrid_2026, lecoq_removing_2021, kechris_removing_2021}. A similar issue is reported in human microneurography, where automated spike sorting is challenging because a single recording site can capture activity from multiple C-fibres \cite{troglio_action_2024}. 
 \section{Spike detection and sorting}
 1. Detecting spikes (thresholding, template matching)
 2. Sorting: assigning spikes to units (clustering and classifiers) 
@@ -293,6 +290,7 @@ A fixed-amplitude threshold detection is simple and commonly used, but its perfo
 Thus, the selected threshold influences the detected events and later spike classification and sorting stages. Therefore, amplitude thresholding detects spikes by their size, which is limited when the spikes vary in amplitude, especially in microneurography, where spikes from C-fibres have a low signal-to-noise ratio \cite{troglio_hybrid_2026}. An alternative method to amplitude thresholding is template matching, where the spikes are detected by their shape rather than its ampliude. A template of the target waveform correlates with the signal, and detections are the positions of high similarity \cite{laboy-juarez_normalized_2019}. Unlike amplitude thresholding, template matching can detect low-amplitude spikes that some amplitude threshold would miss \cite{laboy-juarez_normalized_2019}, and by normalising the similarity score (normalised cross-correlation), it becomes independent of amplitude, so small or large spikes with the same shape are detected equally. Nonetheless, its performance depends on how distinct the target's spike shape is from other non-targets. 
 For the spike sorting stage, unsupervised clustering is commonly used, which is where the spikes are grouped by similarity would labels \cite{lewicki_review_1998}. This method is suitable if ground truth labels are not available; however, when the spikes from different units overlap in feature space, clustering does not separate them. The alternative method is used when ground truth labels are available: classification, where the model learns a decision boundary from the labelled target and nontarget spikes \cite{troglio_hybrid_2026}. 
 Before the sorting stage, features have to be extracted to reduce the dimensionality of the waveforms. The most commonly used method for dimensionality reduction is PCA, where the waveforms are projected into the direction of greatest variance \cite{quiroga_unsupervised_2004}. But this can discard discriminative details such as the fine features that can distinguish similar spikes \cite{quiroga_unsupervised_2004}. The alternative is to use the raw waveform directly as features similar to \cite{troglio_hybrid_2026}, who compared feature sets for spike sorting and found that raw waveform features performed better than PCA. However, \cite{troglio_hybrid_2026} compared this for single-channel analysis, so dimensionality reduction could be more useful for multi-channel analysis, where PCA can capture the cross-channel spatial signature. 
+Because waveforms can be too similar in shape, so seperatuing the target unit by shape alone is challenging \cite{troglio_hybrid_2026}. Using the marking method and applying a low-frequency electrical stimulus evokes a spike in the target fibre at a consistent latency after each stimulus, and repeated responses align into a distinct vertical in a waterfall plot \cite{schmelz_delayed_1995}. This allows the low-amplitude spikes to be identified by their latency, not just shape \cite{troglio_hybrid_2026}. The activity-dependent slowing (ADS) is what makes the latency fibre-specific, so when a fibre fires more, its conduction velocity decreases, causing its latency to increase \cite{serra_activitydependent_1999}. Different fibres have different ADS profiles, so their latency tracks diverge, which allows fibres with similar waveforms to be distinguished by how their latency changes over time \cite{troglio_hybrid_2026}. Therefore, for electrically evoked activity, where stimulus timing is available, these knowledge-driven constraints. However, when stimulus timing is not available or is insufficient, for example for spontaneous or chemically evoked activity and for overlapping spikes,  even latency constraints are limited \cite{troglio_hybrid_2026}. 
 
 \section{Signal preprocessing and denoising}
 Denoising methods wavelet (Donoho jonstone, Quian Quiroga), autoencoders (Kerchis, Alain Bengio)
@@ -303,26 +301,17 @@ The critical analysis:
 4. The open question: does denoising help downstream detection and sorting or just clean the signal? 
 5. Critically, denoising is often applied uncritically; its downstream benefit for Microneurography is unclear. 
 \label{sec:denoising}
-
-
-
-
-
-
-
-
-
-
-
-
-
+Denoising these low signal-to-noise ratio microneurography recordings is an attractive preprocessing step for such analysis.  Wavelet thresholding works by compressing the signal into frequency scales, then suppressing the small coefficients (noise) and then reconstructing the signal \cite{donoho_minimax_1998}. Autoencoders learn to reconstruct a clean signal from a noisy input by learning the structure of the data \cite{kechris_removing_2021, bengio_generalized_2013}. The ideal scenario is that these denoisers clean the signal to facilitate a sufficient spike sorting analysis. However, \cite{kay_risk_2022} argues that denoising can introduce systemic bias, where a method can improve the correspondence between the noisy dataset and a ground truth measure, but in turn distort the underlying signal, which may lead to incorrect inference. With spike processing specifically, criteria for noise removal such as reconstruction error can ignore whether the spike morphology is preserved; even if the signal appears cleaner, the spikes may be distorted \cite{baldazzi_systematic_2020}. In addition, autoencoders can show further risk; they can create spurious modes or false attractors in regions that project noise into structured presentation in training \cite{bengio_generalized_2013}. This means for spike detection and sorting, a noise segment that is far from the spike waveforms in training could be reconstructed to be learned as a spike shape or spurious attractor, producing a spike-like waveform that does not originally exist in the raw signal, which could lead to denoiser-induced false detections. So, while denoising can clean the signal, whether it can help downstream detection or sorting is unclear for single-channel. This motivates the evaluation of whether denoising would help spike detection and sorting or would distort the spike and add spurious detections. 
 
 \section{Research gap}
 1. Single-channel contamination is known and unresolved (Troglio, Hill). 
 2. Denoising downstream benefit for single-channel Microneurography is unclear. 
 3. Leakage-safe evaluation is often neglected. 
-So, my question should be around: evaluate whether denoiisng help detection/ classification in single-channel microneurography,
+So, my question should be around: evaluate whether denoisng help detection/ classification in single-channel microneurography,
 \label{sec:research_gap}
+The sections above identify three issues. First, Spikes from different fibres have similar waveform shapes to separate for a single-channel, where the spatial information is missed \cite{hill_quality_2011, pedreira_how_2012, troglio_hybrid_2026}. Second, timing based constrains like latency and ADS address this limitation, but do not resolve the waveform shape separation issue for spontaneous and overlapping activity \cite{troglio_hybrid_2026}. Third, denoising is applied in the literature for low-SNR signals, but its benefit for detection and classification is unstated. 
+A further methodological gap is worth flagging: detection and classification evaluations are often susceptible to information leakage, in which the same data is used both to select parameters and to evaluate performance. This double-dipping can inflate apparent performance and lead a classifier to produce optimistic results \cite{kriegeskorte_circular_2009}.
+This project addresses these gaps by evaluating whether denoising improves signal channel spike detection and classification. A leakage-safe evaluation protocol was applied, in which all tuning is performed on a development set, and performance is scored once on the held-out evaluation set. To assess whether the findings are consistent, the evaluation is performed across multiple channels independently. Three questions this analysis tries to answer: What is the quality of denoising in terms of noise reduction and spike preservation?; does denoising improve spike detection?; and does denoising improve classification of the target spike against other non-target spikes?. 
 
 % -----------------------------------------------------------------------------
 
@@ -404,7 +393,6 @@ As with one-class, the C parameter was fixed at 1.0 a priori to avoid tuning on 
  \subsection{Bootstrap confidence intervals}
  Each ROC-AUC is a point estimate from one candidate set. The uncertainty is quantified with 95\% confidence intervals computed by bootstrap resampling \cite{efron_resampling_2001}, as used by \cite{troglio_hybrid_2026} for spike sorting performance. The difference is that \cite{troglio_hybrid_2026} quantified performance uncertainty around $F_1$ score, while here around ROC-AUC. The evaluation candidates were resamples with replacement 2000 times, and the ROC-AUC was computed for each resample. Then the 95\% intervals were taken as the 2.5th and 97.5th percentile of the resample values. Any resample that only contained one class were skipped. To interpret the results, a narrow interval indicates AUC is likely accurate, while a wide interval indicates the AUC values are less reliable \cite{corbacioglu_receiver_2023}. 
 % -----------------------------------------------------------------------------
-
 \chapter{Critical Evaluation}
 \label{chap:evaluation}
 \section{Data and channels}
