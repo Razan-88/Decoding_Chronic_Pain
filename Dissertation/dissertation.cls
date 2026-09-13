@@ -37,7 +37,10 @@
 % load base class, then general-purpose packages
 
 \LoadClass[10pt,a4paper,twoside]{book}
-
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{multirow}
 % http://www.ctan.org/tex-archive/macros/latex/required/graphics
 \RequirePackage{graphicx}
 % http://www.ctan.org/tex-archive/macros/latex/required/amslatex
