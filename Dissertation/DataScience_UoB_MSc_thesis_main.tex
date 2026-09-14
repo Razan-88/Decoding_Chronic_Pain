@@ -42,29 +42,6 @@
 % be deleted (or commented out) if you use the file as a template for your
 % own dissertation: everything following it is in the correct order to use 
 % as is.
-
-\section*{Prelude}
-\thispagestyle{empty}
-
-
-A typical MSc thesis will be structured according to a fairly standard sequence of 
-sections, and one example is shown here.  However, it is hard and perhaps even 
-counter-productive to generalise: the goal of this document is {\em not}\/ to be prescriptive, to show you how you {\em must} structure your thesis; rather it is to simply to act as a guideline, to show you how you {\em could} structure your thesis.  In particular, each chapter's indicated page-count is
-important but {\em not}\/ absolute: the aim is simply to highlight that a 
-clear and concise description is better than a rambling alternative that makes
-it hard to separate important content and facts from irrelevant trivia.
-
-You can use this document as a \LaTeX-based 
-template for your own thesis by simply deleting extraneous sections
-and content, and adding your own text. If you do that, we recommend using BibTeX
-to deal with the associated bibliography. 
-You may want to use Overleaf (an online cloud-based collaborative \LaTeX platform).
-
-
-The words ``thesis'' and ``dissertation'' are used interchangeably here. All active hyperlinks in the PDF file are rendered in the same shade of dark blue. 
-
-
-
 % =============================================================================
 
 % This macro creates the standard UoB title page by using information drawn
@@ -670,7 +647,10 @@ Because the data used for the analysis is real, denoising quality was assessed b
 
 \noindent
 Only the raw waveform features were used following \cite{troglio_hybrid_2026}, which found that raw feature waveforms performed better than PCA. However, for this data, a different feature representation might change the classification performance. The findings of this analysis are from one recording with a specific signal-to-noise ratio (SNR) and fibre count condition; different recordings with higher SNR and fewer fibres might show different results, as \cite{troglio_hybrid_2026} found variation across recordings. 
-[TO DO]
+\bigskip
+
+\noindent
+Finally, this thesis performed binary classification, which only distinguishes the target spikes from non-target rather than full spike sorting. Full spike sorting would cluster all detected spikes into multiple distinct units, assigning each spike to its fibre. The binary classification used here is therefore a simpler task. 
 \chapter{Conclusion}
 \label{chap:conclusion}
 This thesis evaluated whether denoising improves single-channel spike detection and classification in rat saphenous nerve microneurography. A leakage-safe pipeline was developed: all parameters for the spike template, denoisers and detection were fitted on a development set, and performance was scored once on held-out evaluation data. Three denoisers were compared: wavelet, a dense autoencoder and a convolutional autoencoder and analysis was performed for five independent channels on which the target unit appears.  
@@ -700,9 +680,12 @@ These findings on single channels are a strong motivation for further and future
 
 \noindent
 Two further directions could be raised from the limitation mentioned above for either single-channel or multi-channel analysis. First, the latency window choice restricted the analysis to a 15-minute window. Over longer recording windows, fibres are more densely active, and activity-dependent slowing causes the latency to shift and spread, so the fixed latency used here cannot capture this spread \cite{serra_activitydependent_1999}. Therefore, a latency tracking approach that follows the moving latency track using track-detection algorithms such as track correlation or activity-dependent shift constraints that follow the ADS-driven latency change over time would allow the method to extend to longer and more active recording periods. This paper by \cite{turnquist_automated_2016} uses automated detection of latency tracks using track correlation, while \cite{troglio_hybrid_2026} uses constraint detection to intervals showing activity-dependent latency shift. Second, which is linked to the first point, a higher-powered evaluation would tighten the confidence intervals and allow the at-chance finding to be tested more conclusively. 
+\bigskip
 
+\noindent
+Finally, since this work does not perform full spike sorting, but rather binary classification, clustering the detected spikes into multiple distinct units rather than only separating the target from non-target is a natural extension. However, the at-chance results here suggest that full single-channel sorting would have the same limitation, since separating will still require separation by a unit's waveform shape. So, a full sorting might succeed with multi-channel spatial information, which provides a distinguishable signature between the units that a single-channel does not.
 
-Overall, this work shows that denoising on a single channel does not overcome the limitation that the overlap and the waveform similarity between the target fibre and co-active fibres; separating them would need the spatial information.  
+Overall, this work shows that denoising on a single channel does not overcome the limitation of the overlap and the waveform similarity between the target fibre and co-active fibres; separating them would need the spatial information.  
 % =============================================================================
 
 % Finally, after the main matter, the back matter is specified.  This is
