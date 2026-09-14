@@ -11,13 +11,13 @@ All tuning (template, denoisers, detection parameters, classifiers) is performed
 
 ## Repository structure
 Notebooks/
-Final_leak_safe.ipynb # main analysis
-exploratory_with_leakage.ipynb # earlier exploratory analysis that contains data leakage **not used for final results**
-pipeline_functions.py # contains reusable functions (template, denoiser, detection, classification, metrics)
-figure/ #results figures
-Dissertation/ #LaTeX source of the dissertation
-planing/ #project plan and paper matrix
-requirement.txt #Python dependencies  
+- Final_leak_safe.ipynb: main analysis
+- exploratory_with_leakage.ipynb: earlier exploratory analysis that contains data leakage **not used for final results**
+- pipeline_functions.py: contains reusable functions (template, denoiser, detection, classification, metrics)
+- figure: results figures
+- Dissertation: LaTeX source of the dissertation
+- planing: project plan and paper matrix
+- requirement.txt: Python dependencies  
 
 ## Requirements
 - python 3.13
