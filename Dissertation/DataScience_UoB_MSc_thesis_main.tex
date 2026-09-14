@@ -26,13 +26,13 @@
                 % the degree programme
                     degree={MSc},
                 % the dissertation    title (which cannot be blank)
-                     title={A leakage-safe evaluation of denoising for spike detection and classification across five different single-channel nerve recordings},
+                     title={Denoising Extracellular Recording for Spike Detection and Classification on Single Channels},
                 % the dissertation subtitle (which can    be blank)
-                subtitle={Does denoising improve single-channel detection and classification?},
+                    subtitle={A leakage-safe evaluation of whether denoising improves detection and classification performance},
                 % the dissertation     type
                       type={},
                 % the year of submission
-                      year={2021}]{dissertation}
+                      year={2026}]{dissertation}
 
 \begin{document}
 
@@ -100,6 +100,9 @@ The words ``thesis'' and ``dissertation'' are used interchangeably here. All act
 % automatically by LaTeX; the use of \chapter* means they are not numbered.
 
 % -----------------------------------------------------------------------------
+\chapter*{Ethics Statement}
+\noindent
+This project fits within the scope of the blanket ethics application 15208, as reviewed by my supervisor (Zahraa Abdallah)
 
 \chapter*{Abstract}
 Chronic pain is linked to the firing of C-fibre nociceptors, which can be recorded by microneurography. However, the microelectrode records the activity of multiple fibres at once, alongside other background noise. The spikes from a target fibre must first be detected and separated from those other spikes, which is challenging because of the similarity of C-fibre waveforms. Denoising is usually used on these low signal-to-noise-ratio recordings on the assumption that it improves spike detection and sorting. 
@@ -111,6 +114,8 @@ This thesis tests the hypothesis that denoising improves single-channel spike de
 
 \noindent
 Contrary to the common assumption, denoising did not improve performance. All denoisers reduced noise but attenuated the spike, with the lowest denoiser being the most destructive; denoising did not reduce the false positives in detection; and both classifiers were at chance on every channel, before and after denoising. The consistency of results across channels suggests that single-channel target waveform shape can not be separated from co-active fibres and that denoising cannot overcome this limitation. This leakage-safe evaluation shows that denoising does not improve single-channel spike sorting and motivates multi-channel approaches that exploit spatial information.  
+
+
 % -----------------------------------------------------------------------------
 \chapter*{Supporting Technologies}
 \begin{itemize}
@@ -126,11 +131,9 @@ Contrary to the common assumption, denoising did not improve performance. All de
     
 \end{itemize}
 % -----------------------------------------------------------------------------
-
 \chapter*{Acknowledgements}
 First and foremost, I would like to thank my supervisor, Dr Zahraa Abdallah. She provided excellent academic feedback, but more importantly, she showed incredible empathy when my personal life became difficult. Her patience and encouragement during my worst period of anxiety are the main reason I was able to complete this project. 
 I would also like to thank Omar Swehli for funding my studies and for his encouragement. Finally, I would like to thank my family, friends, and my cat (Prince) for their constant support throughout this dissertation. 
-
 % =============================================================================
 
 % After the front matter comes a number of chapters; under each chapter,
