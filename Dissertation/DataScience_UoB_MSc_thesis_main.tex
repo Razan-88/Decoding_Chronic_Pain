@@ -20,15 +20,15 @@
 %   (so 2014 rather than the academic year, say 2013/14 say).
 
 \documentclass[ % the name of the author
-                    author={Daniel Page},
+                    author={Rzan Alkabier},
                 % the name of the supervisor
-                supervisor={Dr. Andrew Calway},
+                    supervisor={Dr. Zahraa Abdallah},
                 % the degree programme
                     degree={MSc},
                 % the dissertation    title (which cannot be blank)
-                     title={Some Structural Guidelines for Data Science MSc Theses, Including Those With Long Titles that Run Across Multiple Lines on the Front Page},
+                     title={A leakage-safe evaluation of denoising for spike detection and classification across five different single-channel nerve recordings},
                 % the dissertation subtitle (which can    be blank)
-                  subtitle={And those including an optional subtitle too, for good measure},
+                subtitle={Does denoising improve single-channel detection and classification?},
                 % the dissertation     type
                       type={},
                 % the year of submission
@@ -304,29 +304,32 @@ For unbiased performance, a chronological split was used on the recording by div
 \subsection{Template matching and spike detection}
 The spike template was built by averaging the annotated unit's spikes on the development set, to prevent leakage in later stages. For each marked spike, a 90-sample window (45 samples on either side of the spike trough) is then extracted from the signal and then averaged to give the unit's mean waveform. 
 Before averaging, each spike is aligned on a common reference point within a short search region around the marked time, so that the same feature falls at the same position in every window. Without this, the waveform would sit at a slightly different offset, and the average would be blurred. Trough alignment is the standard approach in the literature, though it is sensitive to noise, as the exact location of the trough can shift slightly between spikes \cite{lee_non-linear_2021}. 
-The template is slid across the signal to locate spikes that match the unit's waveforms, then a similarity score is computed at every position. Following the normalised correlation approach to spike detection of \cite{laboy-juarez_normalized_2019, hwang_spike_2014}, the score used here is the Pearson correlation coefficient between the template and the signal window at each position: 
+The template is slid across the signal to locate spikes that match the unit's waveforms, then a similarity score is computed at every position. Following the normalised correlation approach to spike detection of \cite{laboy-juarez_normalized_2019, hwang_spike_2014}. The score used here is the normalised cross-correlation coefficient between the template and the signal window at each position \cite{article}. Because the mean is subtracted from both the template and the signal window, this is equivalent to the Pearson correlation coefficient: 
 \begin{equation}
     r_i = \frac{\sum_{j=1}^{n} (t_j - \bar{t})(x_{i,j} - \bar{x}_i)}
     {\sqrt{\sum_{j=1}^{n} (t_j-\bar{t})^2}\;\sqrt{\sum_{j=1}^{n} (x_{i,j} - \bar{x}_i)^2}}
 \end{equation}
-Where $t_j$ are the template samples, $x_{i,j}$ are the signal samples in the window at position $i$, $\bar{t}$ and $\bar{x}$ are their mean, and $n$ is the template length. The score $r_i$ lies in [-1,1], and 1 means a perfect match in shape; because the score is normalised, it measures waveform shape independently of amplitude, so a small spike and a large spike with the same shape would score equally. Detections are the positions where this shape similarity score exceeds a threshold. 
+Where $t_j$ are the template samples, $x_{i,j}$ are the signal samples in the window at position $i$, $\bar{t}$ and $\bar{x}$ are their mean, and $n$ is the template length. The score $r_i$ lies in [-1,1], and 1 means a perfect match in shape; because the score is normalised, it measures waveform shape independently of amplitude, so a small spike and a large spike with the same shape would score equally.
+\bigskip
+
+\noindent
 Latency constraints were applied on the detection search space following \cite{troglio_hybrid_2026}. The target fibre fires at around the same latency after each stimulus, which is around 100 ms, so a detection's post-stimulus latency indicates whether it belongs to the target unit or not. For each spike, the latency was computed as the interval from the most recent preceding stimulus; the median latency across the development spikes was around 100 ms. So, a detection is only retained if its post-stimulus latency falls within a window centred on this median. 
 Following the leakage safe protocol, both the shape similarity and the latency window width were selected only on the development set by sweeping candidate values and choosing the combination that maximises the development $F_1$ score. These then were frozen and applies to the held out evaluation set. 
 
 \section{Denoising methods}
 Three denoisers are used to remove the noise from the recording: wavelet, dense and convolutional autoencoder. 
 \subsection{Wavelet}
-Wavelet denoising is a signal processing method that works by transforming the signal into wavelet coefficients to remove or shrink the small coefficients that represent noise, and then it reconstructs the signal from what remains \cite{wei_wavelet_2005, donoho_minimax_1998}.  For this project, SWT was used over DWT for the reasons mentioned in (Chapter \ref{chap:background}). The signal was decomposed using Daubechies 4 to decomposition level 4 to give approximation and detail at each level. Then the noise level was estimated at each level using the same MAD estimator on the detail coefficients at each level. A universal threshold was applied using the VisuShrink formula:
+Wavelet denoising is a signal processing method that works by transforming the signal into wavelet coefficients to remove or shrink the small coefficients that represent noise, and then it reconstructs the signal from what remains \cite{wei_wavelet_2005, donoho_minimax_1998}. For this project, SWT was used over DWT for the reasons mentioned in (Chapter \ref{chap:background}). The signal was decomposed using Daubechies 4 to decomposition level 4 to give approximation and detail at each level. Then the noise level was estimated at each level using the same MAD estimator on the detail coefficients at each level. A universal threshold was applied using the VisuShrink formula \cite{donoho_ideal_1994, donoho_-noising_1995}:
 \begin{equation}
     \lambda = \sigma \sqrt{2 \ln N}
     \label{VisuShrink}
 \end{equation}
-Where $N$ is the number of coefficients at that level \cite{donoho_minimax_1998}. The detail coefficents were shrunk using a soft threshold:
+Where $N$ is the number of coefficients at that level. The detail coefficents were shrunk using a soft threshold:
 \begin{equation}
     \eta(x, \lambda) = \text{sign}(x)\, \max(|x| - \lambda,\, 0)
     \label{Soft thresholding}
 \end{equation}
-This then shrinks the coefficients towards zero instead of removing them, and the approximation coefficients were unchanged. The denoised signal is then reconstructed back from the cleaned coefficients to a time-domain signal by inverse SWT. To allow for smoother reconstruction and avoid sharp discontinuities, the soft threshold was chosen over a hard threshold \cite{zhang_improved_2019}. 
+This then shrinks the coefficients towards zero instead of removing them, and the approximation coefficients were unchanged. The denoised signal is then reconstructed back from the cleaned coefficients to a time-domain signal by inverse SWT. To allow for smoother reconstruction and avoid sharp discontinuities, the soft threshold was chosen over a hard threshold \cite{donoho_-noising_1995,zhang_improved_2019}. 
 \subsection{Dense and Convolutional Autoencoders}
 Two autoencoders were used to denoise the signal: dense and convolutional autoencoders. Both were trained on the same development set and applied to the evaluation set in the same way; they only differ in their internal architecture. During training, autoencoders generally require clean signals as a target reference so the model can calculate its reconstructive loss \cite{vincent_extracting_2008, kechris_removing_2021}. With real extracellular recordings, there is no clean reference, so training pairs were generated using synthetic pairs from the real spike template. The continuous signal was divided into 60-sample windows; each window was created as one of two types: a window that contains the template spike from the development set or only a noisy window. In the window with a spike, the template was randomly shifted and scaled so the model learns to see spikes at different positions and amplitudes. For each clean window, Gaussian noise was then added to produce the noisy input, giving pairs of noisy input and clean target. Both autoencoders used the Adam optimiser for training to minimise the mean squared error (MSE) between the reconstruction output and the clean target. 
 \bigskip
@@ -664,7 +667,7 @@ Because the data used for the analysis is real, denoising quality was assessed b
 
 \noindent
 Only the raw waveform features were used following \cite{troglio_hybrid_2026}, which found that raw feature waveforms performed better than PCA. However, for this data, a different feature representation might change the classification performance. The findings of this analysis are from one recording with a specific signal-to-noise ratio (SNR) and fibre count condition; different recordings with higher SNR and fewer fibres might show different results, as \cite{troglio_hybrid_2026} found variation across recordings. 
-
+[TO DO]
 \chapter{Conclusion}
 \label{chap:conclusion}
 This thesis evaluated whether denoising improves single-channel spike detection and classification in rat saphenous nerve microneurography. A leakage-safe pipeline was developed: all parameters for the spike template, denoisers and detection were fitted on a development set, and performance was scored once on held-out evaluation data. Three denoisers were compared: wavelet, a dense autoencoder and a convolutional autoencoder and analysis was performed for five independent channels on which the target unit appears.  
