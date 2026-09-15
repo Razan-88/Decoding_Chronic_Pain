@@ -259,11 +259,11 @@ Three questions this analysis tries to answer: What is the quality of denoising 
 This chapter describes the data and the methods used to detect, classify and denoise the target fibre's spikes in a single channel. It first introduces the recording and how the target unit was identified, then estimates the noise floor. It then describes the detection pipeline in three stages: building and matching a spike template, and constraining detections by their timing after the stimulus. It then describes the two classifiers used on the detection survivors: a one-class and two-class support vector machine. Finally describes three denoising methods: Wavelet, Dense Autoencoder and Convolutional Autoencoder to evaluate each method and to assess whether denoising improves detection or classification, and the metrics used throughout. 
 
 \section{The data: rat saphenous nerve microneurography}
-This project uses an extracellular microneurography recording from the peripheral nerve of a rat, sampled at 30 kHz over approximately 2.3 hours. The nerve carries many afferent fibres, so the electrode records the action potentials of many units at once, superimposed on background noise. Recordings were made using two multi-electrode sensor units placed at different positions along the nerve, each containing several
+This project uses data that consist of time series recordings from the saphenous nerve of a rat, sampled at 30 kHz over approximately 2.3 hours. The nerve carries many afferent fibres, so the electrode records the action potentials of many units at once, superimposed on background noise. Recordings were made using two multi-electrode sensor units placed at different positions along the nerve, each containing several channels corresponding to slightly different electrode locations.
 \hspace{0.5cm}
 
 \noindent
-channels corresponding to slightly different electrode locations. Eight channels carry manually labelled ground truth spikes (CH3, CH8, CH9, CH10, CH14, CH19, CH25, CH30). During the recording, an electrical stimulus (Pain stimulus) was delivered repeatedly, giving 2,310 stimulation pulses (TTL) at a normal rate of around 0.25 Hz. The target fibre responds to each stimulus by firing at an approximately fixed latency. The ground truth spike times were marked manually by a human annotator (Figure \ref{fig:raw signal}), who only
+The eight channels carry manually labelled ground truth spikes (CH3, CH8, CH9, CH10, CH14, CH19, CH25, CH30). During the recording, an electrical stimulus (Pain stimulus) was delivered repeatedly, giving 2,310 stimulation pulses (TTL) at a normal rate of around 0.25 Hz. The target fibre responds to each stimulus by firing at an approximately fixed latency. The ground truth spike times were marked manually by a human annotator (Figure \ref{fig:raw signal}), who only
 labelled recognisable nerve responses; therefore, the annotations are conservative, and not every response is labelled. Each spike is marked at the point where the signal crosses zero on its descending slope. 
 \begin{figure}[htbp]
     \centering
@@ -307,12 +307,12 @@ Following the leakage safe protocol, both the shape similarity and the latency w
 \section{Denoising methods}
 Three denoisers are used to remove the noise from the recording: wavelet, dense and convolutional autoencoder. 
 \subsection{Wavelet}
-Wavelet denoising is a signal processing method that works by transforming the signal into wavelet coefficients to remove or shrink the small coefficients that represent noise, and then it reconstructs the signal from what remains \cite{wei_wavelet_2005, donoho_minimax_1998}. For this project, SWT was used over DWT for the reasons mentioned in (Chapter \ref{chap:background}). The signal was decomposed using Daubechies 4 to decomposition level 4 to give approximation and detail at each level. Then the noise level was estimated at each level using the same MAD estimator on the detail coefficients at each level. A universal threshold was applied using the VisuShrink formula \cite{donoho_ideal_1994, donoho_-noising_1995}:
+Wavelet denoising is a signal processing method that works by transforming the signal into wavelet coefficients, removing or shrinking the small coefficients that represent noise, and then reconstructing the signal from the remaining coefficients \cite{wei_wavelet_2005, donoho_minimax_1998}. For this project, SWT was used over DWT for the reasons mentioned in (Chapter \ref{chap:background}). The signal was decomposed using Daubechies 4 to decomposition level 4 to give approximation and detail at each level. Then the noise level was estimated at each level using the same MAD estimator on the detail coefficients at each level. A universal threshold was applied using the VisuShrink formula \cite{donoho_ideal_1994, donoho_-noising_1995}:
 \begin{equation}
     \lambda = \sigma \sqrt{2 \ln N}
     \label{VisuShrink}
 \end{equation}
-Where $N$ is the number of coefficients at that level. The detail coefficents were shrunk using a soft threshold:
+Where $\sigma$ is the noise level, estimated using MAD, and $N$ is the number of coefficients at that level. The detail coefficents were shrunk using a soft threshold:
 \begin{equation}
     \eta(x, \lambda) = \text{sign}(x)\, \max(|x| - \lambda,\, 0)
     \label{Soft thresholding}
