@@ -22,6 +22,8 @@ Notebooks/
 ## Requirements
 - python 3.13
 - Numpy, Scipy, PyTorch, PyWavelet, scikit-learn, h5py, Matplotlib
+## Data
+The data use is rat saphenous nerve recording with reference annotation and are not included in this repository due to their size and provenance 
 
 ## Author 
 Rzan, MSc Data science, University of Bristol. Supervised by Zahraa Abdallah
